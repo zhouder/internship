@@ -1,0 +1,16 @@
+{
+  "description": "桂演广西演艺资源平台毕业实习演示",
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
+  "appid": "touristappid",
+  "projectname": "guiyan-demo",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "minifyWXML": true
+  },
+  "libVersion": "trial"
+}

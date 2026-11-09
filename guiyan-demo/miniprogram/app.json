@@ -1,0 +1,53 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/list/list",
+    "pages/demands/demands",
+    "pages/mine/mine",
+    "pages/detail/detail",
+    "pages/orders/orders",
+    "pages/assistant/assistant",
+    "pages/messages/messages",
+    "pages/login/login"
+  ],
+  "window": {
+    "navigationBarTitleText": "桂演",
+    "navigationBarBackgroundColor": "#007d6e",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f7fb"
+  },
+  "tabBar": {
+    "color": "#7c899a",
+    "selectedColor": "#087f72",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "发现",
+        "iconPath": "assets/home-muted.png",
+        "selectedIconPath": "assets/home.png"
+      },
+      {
+        "pagePath": "pages/list/list",
+        "text": "资源",
+        "iconPath": "assets/digital-muted.png",
+        "selectedIconPath": "assets/digital.png"
+      },
+      {
+        "pagePath": "pages/demands/demands",
+        "text": "需求",
+        "iconPath": "assets/demands-muted.png",
+        "selectedIconPath": "assets/demands.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "assets/mine-muted.png",
+        "selectedIconPath": "assets/mine.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

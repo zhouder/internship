@@ -1,0 +1,26 @@
+name: Demo checks
+on:
+  pull_request:
+    paths: ['guiyan-demo/**', '.github/workflows/demo-checks.yml']
+  push:
+    branches: [main]
+    paths: ['guiyan-demo/**', '.github/workflows/demo-checks.yml']
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: guiyan-demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: guiyan-demo/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run check:mini
+      - run: npm run build
