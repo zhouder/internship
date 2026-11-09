@@ -6,6 +6,8 @@
 
 ## 组员从这里开始
 
+协作入口：[飞书文档与权限设置](guiyan-demo/docs/COLLABORATION_LINKS.md)。先登记分工、领取任务，再按对应模块修改代码和填写验收记录。
+
 1. 阅读 [GitHub零基础协作指南](guiyan-demo/docs/GITHUB_GUIDE.md)。
 2. 按 [项目运行说明](guiyan-demo/README.md) 启动Demo。
 3. 在 [八人分工](guiyan-demo/docs/TEAM.md) 中确认自己的责任。
