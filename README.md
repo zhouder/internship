@@ -6,7 +6,7 @@
 
 ## 组员从这里开始
 
-集中测试：[H5用户端](https://guiyan-demo.vercel.app/h5) · [管理后台](https://guiyan-demo.vercel.app/admin) · [小程序网页预览](https://guiyan-demo.vercel.app/mini)。每人使用自己的演示账号，线上记录共同保存。
+阿里云集中测试：[H5用户端](http://120.24.109.101/h5) · [管理后台](http://120.24.109.101/admin) · [小程序网页预览](http://120.24.109.101/mini)。每人使用自己的演示账号，线上记录共同保存。部署与更新方法见 [ECS维护说明](guiyan-demo/docs/ECS_DEPLOYMENT.md)。当前为HTTP模拟演示环境，正式对外服务需处理备案、域名及HTTPS。
 
 协作入口：[飞书文档与权限设置](guiyan-demo/docs/COLLABORATION_LINKS.md)。先登记分工、领取任务，再按对应模块修改代码和填写验收记录。
 
@@ -35,5 +35,5 @@ H5：`http://localhost:5173/h5`；后台：`http://localhost:5173/admin`。原�
 - 每项修改从最新`main`建立任务分支，测试后提交PR，由集成人检查合并。
 - 修改共用接口、数据库结构、依赖或公共样式前先协调。
 - 各自运行自己的模拟数据库，不提交`data/`、`node_modules/`、`dist/`或私有配置。
-- 线上集中测试使用共享的Neon PostgreSQL；本地仍各自使用SQLite。详见 [部署与集中测试说明](guiyan-demo/docs/DEPLOYMENT.md)。
+- 阿里云集中测试使用服务器上的共享PostgreSQL；本地仍各自使用SQLite。原Vercel/Neon环境保留，两个环境不自动同步，组员测试时统一使用阿里云入口。详见 [ECS维护说明](guiyan-demo/docs/ECS_DEPLOYMENT.md) 与 [原Vercel部署说明](guiyan-demo/docs/DEPLOYMENT.md)。
 - 云文档记录需求、负责人、测试与正式材料；GitHub保存代码和版本记录。没有成员姓名时先用1至8号占位，不把模板记录当成已完成工作。

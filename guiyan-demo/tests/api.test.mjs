@@ -24,7 +24,8 @@ before(async () => {
   let database;
   if (process.env.TEST_DATABASE_URL) {
     const connection = new URL(process.env.TEST_DATABASE_URL);
-    connection.searchParams.set("sslmode", "verify-full");
+    if (connection.searchParams.get("sslmode") === "require")
+      connection.searchParams.set("sslmode", "verify-full");
     testSchema = `test_guiyan_${Date.now()}_${process.pid}`;
     cleanupPool = new pg.Pool({ connectionString: connection.toString() });
     await cleanupPool.query(`CREATE SCHEMA "${testSchema}"`);

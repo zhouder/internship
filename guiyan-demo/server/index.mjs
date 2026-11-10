@@ -376,7 +376,10 @@ export async function createApp({
           ok: true,
           mode: "mock",
           database: db.dialect,
-          version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local",
+          version:
+            process.env.DEPLOYMENT_VERSION ||
+            process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||
+            "local",
           today,
         });
         return;
@@ -1146,7 +1149,7 @@ if (
     : undefined;
   const server = await createApp({ database });
   const port = Number(process.env.PORT || 3001);
-  server.listen(port, "0.0.0.0", () =>
+  server.listen(port, process.env.HOST || "0.0.0.0", () =>
     console.log(`桂演 API / 生产预览：http://localhost:${port}（模拟数据）`),
   );
 }

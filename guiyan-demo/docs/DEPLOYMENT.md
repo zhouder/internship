@@ -1,5 +1,7 @@
 # Vercel与Neon部署说明
 
+> 小组当前集中测试入口已迁移至阿里云ECS，见 [ECS部署与维护](ECS_DEPLOYMENT.md)。下述Vercel/Neon环境继续保留，但与阿里云数据库各自独立，不自动同步，请勿混用测试地址。
+
 - H5：https://guiyan-demo.vercel.app/h5
 - 管理后台：https://guiyan-demo.vercel.app/admin
 - 小程序网页预览：https://guiyan-demo.vercel.app/mini
