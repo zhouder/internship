@@ -58,17 +58,18 @@ export function createInsights({
     );
   async function profileRows() {
     const today = typeof clock === "function" ? clock() : clock;
-    const [users, orders, favorites, events, rules, resources] =
-      await Promise.all([
-        all(
-          "SELECT id,username,name,city,age,gender,channel,preference,verified,role,created_at FROM users WHERE role<>'admin'",
-        ),
-        orderRows({ role: "admin" }),
-        all("SELECT * FROM favorites"),
-        all("SELECT user_id,detail,created_at FROM events WHERE type='view'"),
-        setting("tagRules", []),
-        all("SELECT id,category FROM resources"),
-      ]);
+    // One request transaction uses one PostgreSQL connection. Queue its reads
+    // explicitly instead of issuing overlapping client.query calls.
+    const users = await all(
+        "SELECT id,username,name,city,age,gender,channel,preference,verified,role,created_at FROM users WHERE role<>'admin'",
+      ),
+      orders = await orderRows({ role: "admin" }),
+      favorites = await all("SELECT * FROM favorites"),
+      events = await all(
+        "SELECT user_id,detail,created_at FROM events WHERE type='view'",
+      ),
+      rules = await setting("tagRules", []),
+      resources = await all("SELECT id,category FROM resources");
     const byId = new Map(resources.map((r) => [r.id, r]));
     return users.map((u) => {
       const own = orders.filter((o) => o.user_id === u.id),
@@ -158,14 +159,15 @@ export function createInsights({
   }
   async function recommendations(user, resources) {
     if (!user) return [];
-    const [views, favorites, orders] = await Promise.all([
-      all(
+    const views = await all(
         "SELECT detail FROM events WHERE type='view' AND user_id=? ORDER BY id DESC LIMIT 100",
         user.id,
       ),
-      all("SELECT resource_id FROM favorites WHERE user_id=?", user.id),
-      orderRows({ id: user.id, role: "user" }),
-    ]);
+      favorites = await all(
+        "SELECT resource_id FROM favorites WHERE user_id=?",
+        user.id,
+      ),
+      orders = await orderRows({ id: user.id, role: "user" });
     const byId = new Map(resources.map((r) => [r.id, r])),
       signals = new Map();
     for (const [rows, key, weight, label] of [
