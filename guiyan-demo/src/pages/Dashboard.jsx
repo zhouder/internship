@@ -29,8 +29,8 @@ export function Trend({ series = [] }) {
       <svg viewBox="0 0 620 260" role="img" aria-label="交易金额趋势图">
         <defs>
           <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop stopColor="#0cae91" stopOpacity=".22" />
-            <stop offset="1" stopColor="#0cae91" stopOpacity=".02" />
+            <stop stopColor="#b7472c" stopOpacity=".22" />
+            <stop offset="1" stopColor="#b7472c" stopOpacity=".02" />
           </linearGradient>
         </defs>
         {[0, 0.25, 0.5, 0.75, 1].map((t) => (
@@ -56,7 +56,7 @@ export function Trend({ series = [] }) {
             <polyline
               points={line}
               fill="none"
-              stroke="#088775"
+              stroke="#b7472c"
               strokeWidth="3"
               strokeLinejoin="round"
             />
@@ -67,7 +67,7 @@ export function Trend({ series = [] }) {
                 cy={y}
                 r="3"
                 fill="white"
-                stroke="#088775"
+                stroke="#b7472c"
                 strokeWidth="2"
               >
                 <title>
@@ -98,7 +98,7 @@ export function Trend({ series = [] }) {
 }
 function Channels({ channels }) {
   const total = channels.reduce((a, c) => a + c.amount, 0),
-    colors = ["#008b78", "#23bd9b", "#78d6ba", "#ccece5", "#7a9bba"];
+    colors = ["#b7472c", "#d27753", "#e5b08a", "#efd8bb", "#6a786d"];
   let acc = 0;
   const stops = channels.map((c, i) => {
     const start = acc;

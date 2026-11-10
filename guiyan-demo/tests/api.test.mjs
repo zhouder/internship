@@ -4,6 +4,7 @@ import { once } from "node:events";
 import { createApp } from "../server/index.mjs";
 import pg from "pg";
 import { openPostgresStore } from "../server/postgres.mjs";
+import { catalogResources } from "../server/catalog-content.mjs";
 let server, base, admin, user, cleanupPool, testSchema;
 async function request(route, { token, method = "GET", body } = {}) {
   const response = await fetch(base + "/api" + route, {
@@ -61,7 +62,7 @@ after(async () => {
 test("公开浏览提供资源但不泄露私有订单或密码", async () => {
   const r = await request("/bootstrap");
   assert.equal(r.status, 200);
-  assert.equal(r.data.resources.length, 22);
+  assert.equal(r.data.resources.length, 22 + catalogResources.length);
   assert.equal(r.data.categories.length, 10);
   assert.equal(r.data.orders.length, 0);
   assert.equal(r.data.profiles.length, 0);
@@ -166,6 +167,41 @@ test("预约审核支付完成链路及非法状态跳转", async () => {
     /无真实合同效力/,
   );
 });
+test("电脑网页下单保留独立来源，取消后库存恢复", async () => {
+  const before = (await request("/bootstrap")).data.resources.find(
+    (r) => r.id === 2,
+  ).stock;
+  const created = await request("/orders", {
+    token: user,
+    method: "POST",
+    body: {
+      resourceId: 2,
+      date: "2028-03-20",
+      quantity: 1,
+      channel: "电脑网页",
+    },
+  });
+  assert.equal(created.status, 200);
+  const order = (await request("/bootstrap", { token: user })).data.orders.find(
+    (o) => o.id === created.data.id,
+  );
+  assert.equal(order.channel, "电脑网页");
+  assert.equal(
+    (
+      await request(`/orders/${order.id}`, {
+        token: user,
+        method: "PATCH",
+        body: { action: "cancel" },
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await request("/bootstrap")).data.resources.find((r) => r.id === 2).stock,
+    before,
+  );
+});
+
 test("场馆档期冲突拒绝，取消后释放档期", async () => {
   const body = { resourceId: 1, date: "2027-02-12", quantity: 1 };
   const first = await request("/orders", { token: user, method: "POST", body });

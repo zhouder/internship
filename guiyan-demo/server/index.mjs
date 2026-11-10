@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { hashPassword, categories } from "./demo-data.mjs";
 import { openSqliteStore, createRequestHandler } from "./database.mjs";
+import { categoryImages } from "./catalog-content.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const today = "2026-11-09";
 const time = () => new Date().toISOString();
@@ -313,6 +314,7 @@ export async function createApp({
           ".js": "application/javascript",
           ".css": "text/css",
           ".png": "image/png",
+          ".webp": "image/webp",
           ".svg": "image/svg+xml",
           ".json": "application/json",
         };
@@ -433,7 +435,9 @@ export async function createApp({
           b.city || "南宁",
           23,
           "未设置",
-          b.channel === "微信小程序" ? "微信小程序" : "H5",
+          ["H5", "电脑网页", "微信小程序"].includes(b.channel)
+            ? b.channel
+            : "H5",
           b.preference || "show",
           time(),
         );
@@ -654,9 +658,7 @@ export async function createApp({
           int(b.price, "价格"),
           text(b.unit, "单位", 10),
           text(b.description, "介绍", 3000),
-          b.category === "venue"
-            ? "/images/venue.png"
-            : "/images/performance.png",
+          categoryImages[b.category],
           int(b.capacity || 0, "人数", 0, 100000),
           int(b.stock ?? 100, "库存", 0, 100000),
           JSON.stringify(b.tags || []),
@@ -777,7 +779,9 @@ export async function createApp({
             r.price * qty,
             d,
             "pending",
-            b.channel === "微信小程序" ? "微信小程序" : "H5",
+            ["H5", "电脑网页", "微信小程序"].includes(b.channel)
+              ? b.channel
+              : "H5",
             String(b.note || "").slice(0, 1000),
             time(),
           );

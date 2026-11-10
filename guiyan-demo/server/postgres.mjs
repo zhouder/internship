@@ -3,6 +3,7 @@ import pg from "pg";
 import { attachDatabasePool } from "@vercel/functions";
 import { schema } from "./schema.mjs";
 import { demoStatements } from "./demo-data.mjs";
+import { enrichCatalog } from "./catalog-content.mjs";
 
 // PostgreSQL aggregates return int8/numeric strings; the demo API uses numbers.
 pg.types.setTypeParser(20, Number);
@@ -69,6 +70,16 @@ export async function openPostgresStore(
           await client.query(postgresSql(batch), rows.flat());
         }
       }
+      await enrichCatalog({
+        prepare(sql) {
+          const query = (...params) => client.query(postgresSql(sql), params);
+          return {
+            all: async (...params) => (await query(...params)).rows,
+            get: async (...params) => (await query(...params)).rows[0],
+            run: query,
+          };
+        },
+      });
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");

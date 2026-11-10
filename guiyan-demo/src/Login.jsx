@@ -17,7 +17,12 @@ export function LoginForm({ admin = false, onDone }) {
       if (register) {
         await api("/register", {
           method: "POST",
-          body: { username, password, name },
+          body: {
+            username,
+            password,
+            name,
+            channel: location.pathname.startsWith("/h5") ? "H5" : "电脑网页",
+          },
         });
         setToast("注册成功，正在登录");
       }

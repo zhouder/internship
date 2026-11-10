@@ -1,13 +1,13 @@
 # 架构与数据说明
 
-H5和管理后台使用 React 与 Vite；微信端使用原生 WXML、WXSS、JS。本地使用 Node HTTP 与 SQLite；线上使用 Vercel Functions 与 Neon PostgreSQL。两种环境共用业务处理逻辑，数据各自独立。支付、AI和渠道等业务对接仍为模拟；云数据库连接信息仅在服务端配置。部署方式见 [部署说明](DEPLOYMENT.md)。
+当前H5手机端、电脑网站和管理后台均使用 React 与 Vite，共用Node HTTP业务接口。本地使用SQLite，阿里云线上使用PostgreSQL；原Vercel/Neon环境独立保留。支付、AI和渠道等业务对接仍为模拟；数据库连接信息仅在服务端配置。部署方式见 [ECS部署说明](ECS_DEPLOYMENT.md)。历史原生小程序源码保留供参考。
 
 ```mermaid
 flowchart LR
   H[H5用户端] --> A[Node HTTP业务接口]
-  M[原生微信小程序] --> A
+  M[电脑网页端] --> A
   B[管理后台] --> A
-  A --> D[(本地SQLite 或 线上Neon PostgreSQL)]
+  A --> D[(本地SQLite 或 线上PostgreSQL)]
   A --> R[规则分析与模拟AI]
   A --> S[模拟支付和渠道同步]
 ```
@@ -53,7 +53,7 @@ stateDiagram-v2
 | audit_logs | 登录、资源变更、订单、同步与审核操作记录 |
 | settings | 库存阈值等演示配置 |
 
-实体和字段定义以 `server/db.mjs` 的建表语句为准；正式数据库设计文档可依据这些真实实现填写。
+实体和字段定义以 `server/schema.mjs` 的建表语句为准；`server/catalog-content.mjs`提供可重复安全执行的内容扩充。正式数据库设计文档可依据这些真实实现填写。
 
 ## 主要API
 

@@ -19,6 +19,7 @@ import { useApp } from "./state";
 import { SearchBox, Modal } from "./ui";
 import { AdminLogin } from "./Login";
 import { Mobile, Messages } from "./Mobile";
+import { Desktop } from "./Marketplace";
 import { Dashboard } from "./pages/Dashboard";
 import { Resources, ResourceDetail } from "./pages/Resources";
 import { Users as UsersPage } from "./pages/Users";
@@ -192,7 +193,7 @@ export default function App() {
         >
           重试
         </button>
-        <p className="muted">请确保已启动本地 API 服务（npm run dev）。</p>
+        <p className="muted">请检查网络连接，稍后重试。</p>
       </div>
     );
   if (!data)
@@ -218,7 +219,13 @@ export default function App() {
     setDetail({ resource, onNeedLogin, onBooked, channel });
   return (
     <>
-      {admin ? <Admin onOpen={open} /> : <Mobile onOpen={open} />}{" "}
+      {admin ? (
+        <Admin onOpen={open} />
+      ) : location.pathname.startsWith("/h5") ? (
+        <Mobile onOpen={open} />
+      ) : (
+        <Desktop onOpen={open} />
+      )}
       {detail ? (
         <ResourceDetail {...detail} onClose={() => setDetail(null)} />
       ) : null}

@@ -50,6 +50,7 @@ npm --prefix guiyan-demo run dev
 ```
 
 - H5： http://localhost:5173/h5
+- 电脑网站： http://localhost:5173/web
 - 管理后台： http://localhost:5173/admin
 - 停止服务：按 `Ctrl+C`。
 

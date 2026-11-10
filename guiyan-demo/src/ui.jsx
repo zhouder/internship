@@ -16,20 +16,41 @@ import {
   Briefcase,
   ShoppingBag,
   Compass,
+  Settings,
+  Copyright,
+  Flower,
+  Gift,
+  MonitorPlay,
+  Mountain,
+  LayoutGrid,
+  Drama,
+  MapPinned,
 } from "lucide-react";
 import { money, statusNames } from "./api";
 export const categoryIcons = {
-  show: Theater,
+  show: Drama,
   venue: Landmark,
-  artist: Mic,
-  equipment: Videotape,
-  copyright: Palette,
-  heritage: Compass,
-  creative: ShoppingBag,
-  digital: Layers,
-  tourism: MapPin,
-  service: Briefcase,
+  artist: Users,
+  equipment: Settings,
+  copyright: Copyright,
+  heritage: Flower,
+  creative: Gift,
+  digital: MonitorPlay,
+  tourism: MapPinned,
+  service: LayoutGrid,
 };
+const responsiveArtwork = new Set(
+  [
+    "venue-evening",
+    "folk-performer",
+    "ensemble",
+    "heritage-workshop",
+    "cultural-gifts",
+    "stage-equipment",
+    "river-evening",
+    "digital-landscape",
+  ].map((name) => `/images/${name}.webp`),
+);
 export function Icon({ name, ...props }) {
   const C = categoryIcons[name] || Layers;
   return <C size={21} strokeWidth={1.8} {...props} />;
@@ -76,6 +97,7 @@ export function SearchBox({
       />
       {value ? (
         <button
+          type="button"
           className="icon-button"
           aria-label="清空搜索"
           onClick={() => onChange("")}
@@ -100,7 +122,9 @@ export function Panel({ title, action, children, className = "" }) {
 export function Modal({ title, onClose, children, wide = false }) {
   const ref = useRef(null);
   const closeRef = useRef(onClose);
-  useEffect(()=>{closeRef.current=onClose;},[onClose]);
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
   useEffect(() => {
     const previous = document.activeElement;
     const saved = document.body.style.overflow;
@@ -163,15 +187,35 @@ export function ResourceCard({
   onFavorite,
   favorite = false,
   compact = false,
+  tile = false,
 }) {
+  const district = r.meta?.address?.includes("区")
+    ? r.meta.address.replace(`${r.city}市`, "").replace(/[（(].*/, "")
+    : "";
   return (
-    <article className={`resource-card ${compact ? "compact" : ""}`}>
+    <article
+      className={`resource-card ${compact ? "compact" : ""} ${tile ? "resource-tile" : ""}`}
+    >
       <button
         className="resource-image"
         onClick={() => onOpen(r)}
         aria-label={`查看${r.name}`}
       >
-        <img src={r.image} alt={r.name + " · 演示示意图"} loading="lazy" />
+        <img
+          src={r.image}
+          srcSet={
+            responsiveArtwork.has(r.image)
+              ? `${r.image.replace(/\.webp$/, "-card.webp")} 640w, ${r.image} 1536w`
+              : undefined
+          }
+          sizes={
+            tile
+              ? "(max-width:560px) 46vw, (max-width:850px) 45vw, 320px"
+              : "150px"
+          }
+          alt={r.name + " · 演示示意图"}
+          loading="lazy"
+        />
       </button>
       <div className="resource-content">
         <div className="resource-title">
@@ -186,21 +230,21 @@ export function ResourceCard({
             </button>
           ) : null}
         </div>
+        <p className="location">
+          <MapPin size={13} />
+          {r.city === "全区" ? "广西全区" : `${r.city}市`}
+          {district ? ` · ${district}` : ""}
+        </p>
         <div className="tags">
           {r.tags.slice(0, 2).map((t) => (
             <span key={t}>{t}</span>
           ))}
         </div>
-        <p className="location">
-          <MapPin size={13} />
-          {r.city}
-          {r.rating > 0 ? ` · ${Number(r.rating).toFixed(1)}分` : ""}
-        </p>
         {!compact ? (
           <div className="resource-bottom">
             <strong>
-              {money(r.price)}
-              <small>/{r.unit}</small>
+              {money(r.price).replace(/\.00$/, "")}
+              <small>起</small>
             </strong>
             <button className="text-button" onClick={() => onOpen(r)}>
               查看详情

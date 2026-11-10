@@ -1,7 +1,17 @@
+import { enrichCatalog } from "./catalog-content.mjs";
 // Keep SQL dialect differences and request transactions outside business routes.
 export async function openSqliteStore(filename) {
   const { openDatabase } = await import("./db.mjs");
   const db = openDatabase(filename);
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    await enrichCatalog(db);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    db.close();
+    throw error;
+  }
   let tail = Promise.resolve();
   return {
     dialect: "sqlite",

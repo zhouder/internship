@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Compass,
   ExternalLink,
+  ChevronDown,
 } from "lucide-react";
 import { useApp } from "./state";
 import { api } from "./api";
@@ -34,8 +35,9 @@ import {
 import { Demands, MessageForm } from "./pages/Demands";
 import { Transactions } from "./pages/Transactions";
 import { AI } from "./pages/AI";
+import { Hero, Categories, Stories } from "./MarketComponents";
 
-function Profile({ onLogin, onNavigate }) {
+export function Profile({ onLogin, onNavigate }) {
   const { data, action, logout, busy } = useApp();
   const [edit, setEdit] = useState(false),
     [message, setMessage] = useState(false),
@@ -218,9 +220,15 @@ export function Mobile({ onOpen }) {
     [query, setQuery] = useState(""),
     [city, setCity] = useState(""),
     [sort, setSort] = useState("default"),
-    [login, setLogin] = useState(false);
-  const mini = location.pathname.startsWith("/mini"),
-    channel = mini ? "微信小程序" : "H5";
+    [login, setLogin] = useState(false),
+    [limit, setLimit] = useState(12);
+  const channel = "H5";
+  function discover(id) {
+    setCategory(id);
+    setQuery("");
+    setLimit(12);
+    navigate("resources");
+  }
   function navigate(target) {
     if (
       ["orders", "favorites", "messages", "ai"].includes(target) &&
@@ -271,40 +279,38 @@ export function Mobile({ onOpen }) {
   return (
     <div className="mobile-canvas">
       <div className="mobile-shell">
-        {mini ? (
-          <div className="mini-status">
-            <span>10:24</span>
-            <span>微信小程序 · 网页预览</span>
-            <span>▰</span>
-          </div>
-        ) : null}
         <header className="mobile-header">
           <div className="mobile-top">
             <a className="mobile-brand" href="/h5">
               桂演
             </a>
-            <button
-              className="city-button"
-              onClick={() => {
-                const cities = ["", "南宁", "柳州", "桂林", "北海"];
-                setCity(cities[(cities.indexOf(city) + 1) % cities.length]);
-              }}
-            >
-              {city || "全区"}⌄
-            </button>
+            <label className="city-button">
+              <select
+                aria-label="所在城市"
+                value={city}
+                onChange={(event) => {
+                  setCity(event.target.value);
+                  setLimit(12);
+                }}
+              >
+                <option value="">南宁</option>
+                {["南宁", "柳州", "桂林", "北海", "崇左", "河池"].map(
+                  (name) => (
+                    <option key={name}>{name}</option>
+                  ),
+                )}
+              </select>
+              <ChevronDown size={13} />
+            </label>
             <div className="mobile-top-right">
-              {mini ? (
-                <span className="wechat-capsule">•••　◉</span>
-              ) : (
-                <button
-                  aria-label="消息"
-                  className="icon-button"
-                  onClick={() => navigate("messages")}
-                >
-                  <Bell size={20} />
-                  {data.messages.some((m) => !m.is_read) ? <i /> : null}
-                </button>
-              )}
+              <button
+                aria-label="消息"
+                className="icon-button"
+                onClick={() => navigate("messages")}
+              >
+                <Bell size={24} strokeWidth={1.65} />
+                {data.messages.some((m) => !m.is_read) ? <i /> : null}
+              </button>
             </div>
           </div>
           {home || listing ? (
@@ -325,38 +331,8 @@ export function Mobile({ onOpen }) {
         <main className={`mobile-main page-${page}`}>
           {home ? (
             <>
-              <section className="mobile-hero">
-                <img
-                  src="/images/performance.png"
-                  alt="壮族民族歌舞演出示意图"
-                />
-                <h1>好戏广西，触手可及</h1>
-                <button
-                  onClick={() => {
-                    setCategory("show");
-                    navigate("resources");
-                  }}
-                >
-                  发现演出
-                  <ChevronRight size={14} />
-                </button>
-              </section>
-              <div className="mobile-categories">
-                {data.categories.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => {
-                      setCategory(c.id);
-                      navigate("resources");
-                    }}
-                  >
-                    <span>
-                      <Icon name={c.id} />
-                    </span>
-                    {c.name}
-                  </button>
-                ))}
-              </div>
+              <Hero onDiscover={discover} />
+              <Categories onSelect={discover} />
               <section className="mobile-recommend">
                 <div className="section-title">
                   <h2>{data.user ? "为你推荐" : "推荐资源"}</h2>
@@ -371,7 +347,7 @@ export function Mobile({ onOpen }) {
                     <ChevronRight size={14} />
                   </button>
                 </div>
-                {resources.slice(0, 5).map((r) => (
+                {resources.slice(0, 2).map((r) => (
                   <ResourceCard
                     key={r.id}
                     resource={r}
@@ -381,6 +357,25 @@ export function Mobile({ onOpen }) {
                   />
                 ))}
               </section>
+              <div className="mobile-editorial">
+                <Stories onSelect={discover} compact />
+                <div className="section-title">
+                  <h2>发现更多好戏</h2>
+                  <button className="text-button" onClick={() => discover("")}>
+                    全部资源
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+                {data.resources.slice(22, 26).map((resource) => (
+                  <ResourceCard
+                    key={resource.id}
+                    resource={resource}
+                    onOpen={open}
+                    onFavorite={favorite}
+                    favorite={data.favorites.includes(resource.id)}
+                  />
+                ))}
+              </div>
               <p className="note mobile-note">
                 毕业实习演示 · 模拟数据与示意图片
               </p>
@@ -443,7 +438,7 @@ export function Mobile({ onOpen }) {
               ) : null}
               {(page === "favorites"
                 ? data.resources.filter((r) => data.favorites.includes(r.id))
-                : resources
+                : resources.slice(0, limit)
               ).map((r) => (
                 <ResourceCard
                   key={r.id}
@@ -453,6 +448,15 @@ export function Mobile({ onOpen }) {
                   favorite={data.favorites.includes(r.id)}
                 />
               ))}
+              {page === "resources" && resources.length > limit ? (
+                <button
+                  className="button load-more"
+                  onClick={() => setLimit((value) => value + 12)}
+                >
+                  加载更多资源
+                  <ChevronDown size={16} />
+                </button>
+              ) : null}
               {(page === "favorites" && !data.favorites.length) ||
               (page === "resources" && !resources.length) ? (
                 <Empty text="暂无符合条件的资源" />
@@ -510,25 +514,6 @@ export function Mobile({ onOpen }) {
           ))}
         </nav>
       </div>
-      <aside className="desktop-mobile-links">
-        <span className="brand-word">桂演</span>
-        <p>广西演艺资源平台</p>
-        <a className={mini ? "" : "active"} href="/h5">
-          H5 用户端
-        </a>
-        <a className={mini ? "active" : ""} href="/mini">
-          小程序界面预览
-        </a>
-        <a href="/admin">
-          电脑管理后台
-          <ExternalLink size={14} />
-        </a>
-        <small>
-          原生微信小程序源码位于
-          <br />
-          miniprogram 文件夹
-        </small>
-      </aside>
       {login ? <LoginModal onClose={() => setLogin(false)} /> : null}
     </div>
   );
