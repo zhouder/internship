@@ -1,3 +1,5 @@
 ~$*
 ~$*.doc
 ~$*.xlsm
+.vercel
+.env*

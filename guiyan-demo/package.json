@@ -11,14 +11,18 @@
     "dev:web": "vite --host 0.0.0.0",
     "dev:api": "node --experimental-sqlite server/index.mjs",
     "build": "vite build",
+    "db:setup": "node scripts/init-postgres.mjs",
     "start": "node --experimental-sqlite server/index.mjs",
     "test": "node --experimental-sqlite --test tests/*.test.mjs",
+    "test:postgres": "node scripts/test-postgres.mjs",
     "check:mini": "node scripts/check-mini.mjs"
   },
   "dependencies": {
+    "@vercel/functions": "^3.11.1",
+    "lucide-react": "^0.468.0",
+    "pg": "^8.23.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "lucide-react": "^0.468.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

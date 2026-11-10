@@ -33,4 +33,5 @@ H5：`http://localhost:5173/h5`；后台：`http://localhost:5173/admin`。原�
 - 每项修改从最新`main`建立任务分支，测试后提交PR，由集成人检查合并。
 - 修改共用接口、数据库结构、依赖或公共样式前先协调。
 - 各自运行自己的模拟数据库，不提交`data/`、`node_modules/`、`dist/`或私有配置。
+- 线上集中测试使用共享的Neon PostgreSQL；本地仍各自使用SQLite。详见 [部署与集中测试说明](guiyan-demo/docs/DEPLOYMENT.md)。
 - 云文档记录需求、负责人、测试与正式材料；GitHub保存代码和版本记录。没有成员姓名时先用1至8号占位，不把模板记录当成已完成工作。

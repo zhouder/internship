@@ -2,7 +2,9 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createApp } from "../server/index.mjs";
-let server, base, admin, user;
+import pg from "pg";
+import { openPostgresStore } from "../server/postgres.mjs";
+let server, base, admin, user, cleanupPool, testSchema;
 async function request(route, { token, method = "GET", body } = {}) {
   const response = await fetch(base + "/api" + route, {
     method,
@@ -19,7 +21,18 @@ async function request(route, { token, method = "GET", body } = {}) {
   };
 }
 before(async () => {
-  server = createApp({ dbFile: ":memory:" });
+  let database;
+  if (process.env.TEST_DATABASE_URL) {
+    const connection = new URL(process.env.TEST_DATABASE_URL);
+    connection.searchParams.set("sslmode", "verify-full");
+    testSchema = `test_guiyan_${Date.now()}_${process.pid}`;
+    cleanupPool = new pg.Pool({ connectionString: connection.toString() });
+    await cleanupPool.query(`CREATE SCHEMA "${testSchema}"`);
+    database = await openPostgresStore(connection.toString(), {
+      poolOptions: { options: `-c search_path=${testSchema}` },
+    });
+  }
+  server = await createApp({ dbFile: ":memory:", database });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   base = "http://127.0.0.1:" + server.address().port;
@@ -36,7 +49,14 @@ before(async () => {
     })
   ).data.token;
 });
-after(() => new Promise((resolve) => server.close(resolve)));
+after(async () => {
+  if (server) await new Promise((resolve) => server.close(resolve));
+  if (cleanupPool) {
+    assert.match(testSchema, /^test_guiyan_\d+_\d+$/);
+    await cleanupPool.query(`DROP SCHEMA "${testSchema}" CASCADE`);
+    await cleanupPool.end();
+  }
+});
 test("公开浏览提供资源但不泄露私有订单或密码", async () => {
   const r = await request("/bootstrap");
   assert.equal(r.status, 200);
@@ -524,3 +544,85 @@ test("登出后原令牌失效", async () => {
     401,
   );
 });
+
+test("并发预约不超卖，同一订单重复取消只恢复一次库存", async () => {
+  const before = (await request("/bootstrap")).data.resources.find(
+    (r) => r.id === 12,
+  ).stock;
+  const results = await Promise.all(
+    Array.from({ length: before + 2 }, () =>
+      request("/orders", {
+        token: user,
+        method: "POST",
+        body: { resourceId: 12, date: "2027-03-10", quantity: 1 },
+      }),
+    ),
+  );
+  assert.equal(results.filter((r) => r.status === 200).length, before);
+  assert.equal(results.filter((r) => r.status === 409).length, 2);
+  for (const order of results.filter((r) => r.status === 200)) {
+    const cancelled = await Promise.all(
+      [1, 2].map(() =>
+        request(`/orders/${order.data.id}`, {
+          token: user,
+          method: "PATCH",
+          body: { action: "cancel" },
+        }),
+      ),
+    );
+    assert.deepEqual(cancelled.map((r) => r.status).sort(), [200, 409]);
+  }
+  assert.equal(
+    (await request("/bootstrap")).data.resources.find((r) => r.id === 12).stock,
+    before,
+  );
+});
+
+test("并发提交同一场馆档期只有一笔成功", async () => {
+  const results = await Promise.all(
+    [1, 2, 3].map(() =>
+      request("/orders", {
+        token: user,
+        method: "POST",
+        body: { resourceId: 1, date: "2027-03-15", quantity: 1 },
+      }),
+    ),
+  );
+  assert.deepEqual(results.map((r) => r.status).sort(), [200, 409, 409]);
+  await request(`/orders/${results.find((r) => r.status === 200).data.id}`, {
+    token: user,
+    method: "PATCH",
+    body: { action: "cancel" },
+  });
+});
+
+test("API拒绝JSON数组或null作为请求对象", async () => {
+  for (const body of [[], null]) {
+    const response = await fetch(base + "/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    assert.equal(response.status, 400);
+  }
+});
+
+test(
+  "PostgreSQL重新建立应用连接后仍保留数据和会话",
+  { skip: !process.env.TEST_DATABASE_URL },
+  async () => {
+    const before = (await request("/bootstrap", { token: user })).data;
+    await new Promise((resolve) => server.close(resolve));
+    const database = await openPostgresStore(process.env.TEST_DATABASE_URL, {
+      poolOptions: { options: `-c search_path=${testSchema}` },
+    });
+    server = await createApp({ database });
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    base = "http://127.0.0.1:" + server.address().port;
+    const after = (await request("/bootstrap", { token: user })).data;
+    assert.equal(after.user.id, before.user.id);
+    assert.equal(after.orders.length, before.orders.length);
+    assert.equal(after.resources.length, before.resources.length);
+  },
+);

@@ -3,3 +3,6 @@ dist/
 data/
 *.log
 miniprogram/project.private.config.json
+.vercel/
+.env*
+!.env.example

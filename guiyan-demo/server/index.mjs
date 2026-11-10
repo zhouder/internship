@@ -3,14 +3,17 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { openDatabase, hashPassword, categories } from "./db.mjs";
-
+import { hashPassword, categories } from "./demo-data.mjs";
+import { openSqliteStore, createRequestHandler } from "./database.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const today = "2026-11-09";
 const time = () => new Date().toISOString();
 const validStatuses = ["published", "draft"];
 function assert(condition, message, status = 400) {
-  if (!condition) throw Object.assign(new Error(message), { status });
+  if (!condition)
+    throw Object.assign(new Error(message), {
+      status,
+    });
 }
 function text(value, label, max = 1000) {
   assert(
@@ -47,24 +50,24 @@ const resourceRow = (r) => ({
 });
 const isAdmin = (u) => u?.role === "admin";
 const bookingType = (r) => ["venue", "equipment"].includes(r.category);
-
-export function createApp({
+export async function createApp({
   dbFile = path.join(root, "data", "guiyan.sqlite"),
+  database,
 } = {}) {
-  const db = openDatabase(dbFile);
+  const db = database || (await openSqliteStore(dbFile));
   const all = (sql, ...params) => db.prepare(sql).all(...params);
   const get = (sql, ...params) => db.prepare(sql).get(...params);
   const run = (sql, ...params) => db.prepare(sql).run(...params);
-  const audit = (u, action, detail) =>
-    run(
+  const audit = async (u, action, detail) =>
+    await run(
       "INSERT INTO audit_logs(user_id,action,detail,created_at) VALUES(?,?,?,?)",
       u?.id || null,
       action,
       detail,
       time(),
     );
-  const notify = (uid, title, content, sender = 1) =>
-    run(
+  const notify = async (uid, title, content, sender = 1) =>
+    await run(
       "INSERT INTO messages(user_id,sender_id,title,content,created_at) VALUES(?,?,?,?,?)",
       uid,
       sender,
@@ -73,25 +76,20 @@ export function createApp({
       time(),
     );
   function transaction(fn) {
-    db.exec("BEGIN IMMEDIATE");
-    try {
-      const result = fn();
-      db.exec("COMMIT");
-      return result;
-    } catch (e) {
-      db.exec("ROLLBACK");
-      throw e;
-    }
+    // Write requests already run atomically on one database connection.
+    return fn();
   }
-  function orderRows(user) {
-    return all(
+  async function orderRows(user) {
+    return await all(
       `SELECT o.*,r.name AS resource_name,r.image,r.category,r.unit,u.name AS user_name FROM orders o JOIN resources r ON r.id=o.resource_id JOIN users u ON u.id=o.user_id ${isAdmin(user) ? "" : "WHERE o.user_id=?"} ORDER BY o.id DESC`,
       ...(isAdmin(user) ? [] : [user?.id || 0]),
     );
   }
-  function profileRows() {
-    return all(
-      `SELECT u.id,u.username,u.name,u.city,u.age,u.gender,u.channel,u.preference,u.verified,u.role,COUNT(o.id) AS order_count,COALESCE(SUM(CASE WHEN o.status IN ('paid','completed','disputed','refund_requested') THEN o.amount ELSE 0 END),0) AS spent,MAX(o.created_at) AS last_order FROM users u LEFT JOIN orders o ON o.user_id=u.id WHERE u.role<>'admin' GROUP BY u.id`,
+  async function profileRows() {
+    return (
+      await all(
+        `SELECT u.id,u.username,u.name,u.city,u.age,u.gender,u.channel,u.preference,u.verified,u.role,COUNT(o.id) AS order_count,COALESCE(SUM(CASE WHEN o.status IN ('paid','completed','disputed','refund_requested') THEN o.amount ELSE 0 END),0) AS spent,MAX(o.created_at) AS last_order,(SELECT COUNT(*) FROM favorites f WHERE f.user_id=u.id) AS favorite_count,(SELECT COUNT(*) FROM events e WHERE e.user_id=u.id AND e.type='view') AS view_count FROM users u LEFT JOIN orders o ON o.user_id=u.id WHERE u.role<>'admin' GROUP BY u.id`,
+      )
     ).map((u) => ({
       ...u,
       portrait: {
@@ -99,12 +97,8 @@ export function createApp({
           ? Math.round(u.spent / u.order_count)
           : 0,
         balance: 0,
-        favorites: get("SELECT COUNT(*) n FROM favorites WHERE user_id=?", u.id)
-          .n,
-        views: get(
-          "SELECT COUNT(*) n FROM events WHERE user_id=? AND type='view'",
-          u.id,
-        ).n,
+        favorites: u.favorite_count,
+        views: u.view_count,
         purchaseWindow: u.last_order ? u.last_order.slice(11, 16) : "暂无",
         payment: "模拟支付",
         repeat: u.order_count > 1 ? "有复购" : "暂无复购",
@@ -127,12 +121,14 @@ export function createApp({
             : "推荐低门槛非遗体验与首购活动",
     }));
   }
-  function analysis(period = "day") {
+  async function analysis(period = "day") {
     assert(
       ["day", "week", "month", "quarter"].includes(period),
       "无效统计周期",
     );
-    const orders = orderRows({ role: "admin" }),
+    const orders = await orderRows({
+        role: "admin",
+      }),
       paid = orders.filter((o) =>
         ["paid", "completed", "disputed", "refund_requested"].includes(
           o.status,
@@ -151,13 +147,17 @@ export function createApp({
       if (period === "month") key = d.slice(0, 7);
       if (period === "quarter")
         key = `${d.slice(0, 4)} Q${Math.floor((Number(d.slice(5, 7)) - 1) / 3) + 1}`;
-      const cell = daily.get(key) || { date: key, amount: 0, count: 0 };
+      const cell = daily.get(key) || {
+        date: key,
+        amount: 0,
+        count: 0,
+      };
       cell.amount += o.amount;
       cell.count++;
       daily.set(key, cell);
       channels.set(o.channel, (channels.get(o.channel) || 0) + o.amount);
     });
-    const resources = all("SELECT * FROM resources").map(resourceRow);
+    const resources = (await all("SELECT * FROM resources")).map(resourceRow);
     const ranking = resources
       .map((r) => ({
         ...r,
@@ -168,7 +168,8 @@ export function createApp({
       }))
       .sort((a, b) => b.revenue - a.revenue);
     const threshold = JSON.parse(
-      get("SELECT value FROM settings WHERE key=?", "alertThreshold").value,
+      (await get("SELECT value FROM settings WHERE key=?", "alertThreshold"))
+        .value,
     );
     const alerts = resources
       .filter((r) => !bookingType(r) && r.stock <= threshold)
@@ -193,7 +194,7 @@ export function createApp({
         title: `${abnormal.length}笔售后或纠纷待处理`,
         detail: "请核实退款和申诉信息。",
       });
-    for (const event of all(
+    for (const event of await all(
       "SELECT * FROM events WHERE type LIKE 'alert.%' ORDER BY id DESC LIMIT 5",
     )) {
       const item = JSON.parse(event.detail);
@@ -223,13 +224,16 @@ export function createApp({
         users: activeUsers.size,
       },
       series: [...daily.values()].sort((a, b) => a.date.localeCompare(b.date)),
-      channels: [...channels].map(([name, amount]) => ({ name, amount })),
+      channels: [...channels].map(([name, amount]) => ({
+        name,
+        amount,
+      })),
       ranking,
       alerts,
       insights: [
         `交易额最高的资源是“${ranking[0]?.name || "暂无"}”，可优先安排联动推广。`,
         `当前${pending}笔预约待确认，建议安排专人跟进。`,
-        `高价值用户${profileRows().filter((u) => u.spent > 1000000).length}人，可推荐专场合作与会员组合权益。`,
+        `高价值用户${(await profileRows()).filter((u) => u.spent > 1000000).length}人，可推荐专场合作与会员组合权益。`,
       ],
       venues: resources
         .filter((r) => r.category === "venue")
@@ -256,7 +260,7 @@ export function createApp({
         }),
     };
   }
-  const server = http.createServer(async (req, res) => {
+  const handle = async (req, res) => {
     const send = (value, status = 200) => {
       res.writeHead(status, {
         "Content-Type": "application/json; charset=utf-8",
@@ -297,7 +301,9 @@ export function createApp({
           data = await readFile(file);
         } catch {
           send(
-            { error: "前端尚未构建，请运行 npm run dev 或 npm run build" },
+            {
+              error: "前端尚未构建，请运行 npm run dev 或 npm run build",
+            },
             404,
           );
           return;
@@ -319,20 +325,38 @@ export function createApp({
       }
       let b = {};
       if (["POST", "PATCH", "PUT"].includes(req.method)) {
-        let raw = "";
-        for await (const chunk of req) {
-          raw += chunk;
+        // Vercel may provide an already-parsed body; local HTTP uses a stream.
+        if (req.body !== undefined) {
+          const raw =
+            typeof req.body === "string" || Buffer.isBuffer(req.body)
+              ? req.body.toString()
+              : JSON.stringify(req.body);
           assert(Buffer.byteLength(raw) < 300000, "请求内容过长", 413);
+          try {
+            b = raw ? JSON.parse(raw) : {};
+          } catch {
+            assert(false, "请求数据格式错误");
+          }
+        } else {
+          let raw = "";
+          for await (const chunk of req) {
+            raw += chunk;
+            assert(Buffer.byteLength(raw) < 300000, "请求内容过长", 413);
+          }
+          try {
+            b = raw ? JSON.parse(raw) : {};
+          } catch {
+            assert(false, "请求数据格式错误");
+          }
         }
-        try {
-          b = raw ? JSON.parse(raw) : {};
-        } catch {
-          assert(false, "请求数据格式错误");
-        }
+        assert(
+          b && typeof b === "object" && !Array.isArray(b),
+          "请求数据必须为对象",
+        );
       }
       const token = req.headers.authorization?.replace(/^Bearer /, "");
       const session = token
-        ? get(
+        ? await get(
             "SELECT u.* FROM sessions s JOIN users u ON s.user_id=u.id WHERE token=? AND expires_at>?",
             token,
             time(),
@@ -348,11 +372,17 @@ export function createApp({
         return u;
       };
       if (p === "/api/health") {
-        send({ ok: true, mode: "mock", today });
+        send({
+          ok: true,
+          mode: "mock",
+          database: db.dialect,
+          version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local",
+          today,
+        });
         return;
       }
       if (p === "/api/login" && req.method === "POST") {
-        const u = get(
+        const u = await get(
           "SELECT * FROM users WHERE username=?",
           text(b.username, "账号", 40),
         );
@@ -365,14 +395,17 @@ export function createApp({
           401,
         );
         const newToken = randomBytes(32).toString("hex");
-        run(
+        await run(
           "INSERT INTO sessions VALUES(?,?,?)",
           newToken,
           u.id,
           new Date(Date.now() + 86400000 * 7).toISOString(),
         );
-        audit(u, "登录", "演示账号登录");
-        send({ token: newToken, user: safeUser(u) });
+        await audit(u, "登录", "演示账号登录");
+        send({
+          token: newToken,
+          user: safeUser(u),
+        });
         return;
       }
       if (p === "/api/register" && req.method === "POST") {
@@ -384,11 +417,11 @@ export function createApp({
         const password = text(b.password, "密码", 100);
         assert(password.length >= 6, "密码至少6位");
         assert(
-          !get("SELECT id FROM users WHERE username=?", username),
+          !(await get("SELECT id FROM users WHERE username=?", username)),
           "账号已存在",
           409,
         );
-        run(
+        await run(
           "INSERT INTO users(username,password,name,role,city,age,gender,channel,preference,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
           username,
           hashPassword(password),
@@ -401,23 +434,29 @@ export function createApp({
           b.preference || "show",
           time(),
         );
-        send({ ok: true });
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/logout" && req.method === "POST") {
-        if (token) run("DELETE FROM sessions WHERE token=?", token);
-        send({ ok: true });
+        if (token) await run("DELETE FROM sessions WHERE token=?", token);
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/bootstrap") {
-        const resources = all(
-          `SELECT r.*,COALESCE((SELECT AVG(rating) FROM comments c WHERE c.resource_id=r.id AND c.status='approved'),0) rating,(SELECT COUNT(*) FROM comments c WHERE c.resource_id=r.id AND c.status='approved') review_count FROM resources r ${isAdmin(session) ? "" : "WHERE r.status='published'"} ORDER BY r.id`,
+        const resources = (
+          await all(
+            `SELECT r.*,COALESCE((SELECT AVG(rating) FROM comments c WHERE c.resource_id=r.id AND c.status='approved'),0) rating,(SELECT COUNT(*) FROM comments c WHERE c.resource_id=r.id AND c.status='approved') review_count FROM resources r ${isAdmin(session) ? "" : "WHERE r.status='published'"} ORDER BY r.id`,
+          )
         ).map(resourceRow);
-        const demands = all(
+        const demands = await all(
           `SELECT d.*,u.name AS user_name FROM demands d JOIN users u ON u.id=d.user_id ${isAdmin(session) ? "" : "WHERE d.status='approved' OR d.user_id=?"} ORDER BY d.id DESC`,
           ...(isAdmin(session) ? [] : [session?.id || 0]),
         );
-        const comments = all(
+        const comments = await all(
           `SELECT c.*,u.name AS user_name,r.name AS resource_name FROM comments c JOIN users u ON u.id=c.user_id JOIN resources r ON r.id=c.resource_id ${isAdmin(session) ? "" : "WHERE c.status='approved' OR c.user_id=?"} ORDER BY c.id DESC`,
           ...(isAdmin(session) ? [] : [session?.id || 0]),
         );
@@ -429,34 +468,36 @@ export function createApp({
           resources,
           demands,
           comments,
-          orders: session ? orderRows(session) : [],
+          orders: session ? await orderRows(session) : [],
           favorites: session
-            ? all(
-                "SELECT resource_id FROM favorites WHERE user_id=?",
-                session.id,
+            ? (
+                await all(
+                  "SELECT resource_id FROM favorites WHERE user_id=?",
+                  session.id,
+                )
               ).map((f) => f.resource_id)
             : [],
           messages: session
-            ? all(
+            ? await all(
                 "SELECT m.*,u.name AS sender_name FROM messages m LEFT JOIN users u ON u.id=m.sender_id WHERE m.user_id=? ORDER BY m.id DESC",
                 session.id,
               )
             : [],
           members: session
-            ? all("SELECT id,name FROM users WHERE role<>?", "admin")
+            ? await all("SELECT id,name FROM users WHERE role<>?", "admin")
             : [],
-          profiles: isAdmin(session) ? profileRows() : [],
-          analytics: isAdmin(session) ? analysis() : null,
+          profiles: isAdmin(session) ? await profileRows() : [],
+          analytics: isAdmin(session) ? await analysis() : null,
           settings: isAdmin(session)
             ? Object.fromEntries(
-                all("SELECT * FROM settings").map((s) => [
+                (await all("SELECT * FROM settings")).map((s) => [
                   s.key,
                   JSON.parse(s.value),
                 ]),
               )
             : null,
           logs: isAdmin(session)
-            ? all(
+            ? await all(
                 "SELECT a.*,u.name AS user_name FROM audit_logs a LEFT JOIN users u ON u.id=a.user_id ORDER BY a.id DESC LIMIT 60",
               )
             : [],
@@ -465,18 +506,20 @@ export function createApp({
       }
       if (p === "/api/analytics") {
         needAdmin();
-        send(analysis(url.searchParams.get("period") || "day"));
+        send(await analysis(url.searchParams.get("period") || "day"));
         return;
       }
       if (p === "/api/alerts" && req.method === "POST") {
         const u = needAdmin();
         if (b.resolve) {
-          run(
+          await run(
             "DELETE FROM events WHERE id=? AND type LIKE 'alert.%'",
             int(b.resolve, "事件编号", 1),
           );
-          audit(u, "处理模拟预警", String(b.resolve));
-          send({ ok: true });
+          await audit(u, "处理模拟预警", String(b.resolve));
+          send({
+            ok: true,
+          });
           return;
         }
         const cases = {
@@ -500,20 +543,25 @@ export function createApp({
         };
         assert(cases[b.kind], "请选择预警类型");
         const [title, detail] = cases[b.kind];
-        run(
+        await run(
           "INSERT INTO events(user_id,type,detail,created_at) VALUES(?,?,?,?)",
           u.id,
           "alert." + b.kind,
-          JSON.stringify({ title, detail }),
+          JSON.stringify({
+            title,
+            detail,
+          }),
           time(),
         );
-        audit(u, "触发模拟预警", title);
-        send({ ok: true });
+        await audit(u, "触发模拟预警", title);
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/export") {
         const u = needAdmin(),
-          rows = orderRows(u);
+          rows = await orderRows(u);
         const csv = (v) =>
           `"${String(v ?? "")
             .replace(/"/g, '""')
@@ -534,7 +582,7 @@ export function createApp({
           ]
             .map((r) => r.map(csv).join(","))
             .join("\r\n");
-        audit(u, "导出报表", `${rows.length}条订单`);
+        await audit(u, "导出报表", `${rows.length}条订单`);
         res.writeHead(200, {
           "Content-Type": "text/csv; charset=utf-8",
           "Content-Disposition": 'attachment; filename="guiyan-orders.csv"',
@@ -557,12 +605,12 @@ export function createApp({
           ].includes(channel),
           "无效模拟渠道",
         );
-        const r = get(
+        const r = await get(
           "SELECT * FROM resources WHERE category='show' AND status='published' AND stock>0 LIMIT 1",
         );
         assert(r, "无可同步的演出资源");
-        transaction(() => {
-          run(
+        await transaction(async () => {
+          await run(
             "INSERT INTO orders(code,user_id,resource_id,quantity,amount,booking_date,status,channel,note,escrow,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
             `GY${Date.now()}${randomBytes(2).toString("hex")}`,
             2,
@@ -576,8 +624,12 @@ export function createApp({
             "模拟托管中",
             time(),
           );
-          run("UPDATE resources SET stock=stock-1 WHERE id=?", r.id);
-          audit(u, "模拟数据同步", `${channel}：接收1条订单，状态模拟成功`);
+          await run("UPDATE resources SET stock=stock-1 WHERE id=?", r.id);
+          await audit(
+            u,
+            "模拟数据同步",
+            `${channel}：接收1条订单，状态模拟成功`,
+          );
         });
         send({
           ok: true,
@@ -591,7 +643,7 @@ export function createApp({
           categories.some((c) => c.id === b.category),
           "请选择资源分类",
         );
-        const result = run(
+        const result = await run(
           "INSERT INTO resources(name,category,city,price,unit,description,image,capacity,stock,tags,meta,status,owner_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
           text(b.name, "名称", 80),
           b.category,
@@ -610,17 +662,20 @@ export function createApp({
           u.id,
           time(),
         );
-        audit(u, "新增资源", b.name);
-        send({ ok: true, id: Number(result.lastInsertRowid) });
+        await audit(u, "新增资源", b.name);
+        send({
+          ok: true,
+          id: Number(result.lastInsertRowid),
+        });
         return;
       }
       let m = p.match(/^\/api\/resources\/(\d+)$/);
       if (m && req.method === "PATCH") {
         const u = needAdmin(),
-          r = get("SELECT * FROM resources WHERE id=?", Number(m[1]));
+          r = await get("SELECT * FROM resources WHERE id=?", Number(m[1]));
         assert(r, "资源不存在", 404);
         assert(validStatuses.includes(b.status || r.status), "资源状态错误");
-        run(
+        await run(
           "UPDATE resources SET name=?,price=?,stock=?,description=?,status=? WHERE id=?",
           b.name === undefined ? r.name : text(b.name, "名称", 80),
           b.price === undefined ? r.price : int(b.price, "价格"),
@@ -631,26 +686,28 @@ export function createApp({
           b.status || r.status,
           r.id,
         );
-        audit(u, "修改资源", r.name);
-        send({ ok: true });
+        await audit(u, "修改资源", r.name);
+        send({
+          ok: true,
+        });
         return;
       }
       m = p.match(/^\/api\/resources\/(\d+)\/sync$/);
       if (m && req.method === "POST") {
         const u = needAdmin(),
-          r = get("SELECT * FROM resources WHERE id=?", Number(m[1]));
+          r = await get("SELECT * FROM resources WHERE id=?", Number(m[1]));
         assert(r, "资源不存在", 404);
         assert(r.category === "show", "只有剧目可进行渠道发布模拟");
         const meta = JSON.parse(r.meta);
         meta.channels = ["抖音", "小红书", "大麦"];
         meta.lastSync = time();
         meta.syncResult = "三渠道内容同步成功（模拟）";
-        run(
+        await run(
           "UPDATE resources SET meta=? WHERE id=?",
           JSON.stringify(meta),
           r.id,
         );
-        audit(u, "剧目渠道同步", r.name + "：抖音、小红书、大麦（模拟）");
+        await audit(u, "剧目渠道同步", r.name + "：抖音、小红书、大麦（模拟）");
         send({
           ok: true,
           message: "剧目已模拟同步至抖音、小红书和大麦，未发送外部请求。",
@@ -659,26 +716,28 @@ export function createApp({
       }
       m = p.match(/^\/api\/resources\/(\d+)\/view$/);
       if (m && req.method === "POST") {
-        const r = get(
+        const r = await get(
           "SELECT * FROM resources WHERE id=? AND status='published'",
           Number(m[1]),
         );
         assert(r, "资源不存在", 404);
-        run("UPDATE resources SET views=views+1 WHERE id=?", r.id);
-        run(
+        await run("UPDATE resources SET views=views+1 WHERE id=?", r.id);
+        await run(
           "INSERT INTO events(user_id,type,detail,created_at) VALUES(?,?,?,?)",
           session?.id || null,
           "view",
           String(r.id),
           time(),
         );
-        send({ ok: true });
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/orders" && req.method === "POST") {
         const u = needUser(),
           rid = int(b.resourceId, "资源编号", 1),
-          r = get(
+          r = await get(
             "SELECT * FROM resources WHERE id=? AND status='published'",
             rid,
           );
@@ -686,19 +745,19 @@ export function createApp({
         const qty = int(b.quantity ?? 1, "数量", 1, 100),
           d = date(b.date);
         assert(!bookingType(r) || qty === 1, "租赁类资源每单数量为1");
-        const id = transaction(() => {
+        const id = await transaction(async () => {
           if (bookingType(r))
             assert(
-              !get(
+              !(await get(
                 "SELECT id FROM orders WHERE resource_id=? AND booking_date=? AND status NOT IN ('cancelled','refunded')",
                 rid,
                 d,
-              ),
+              )),
               "该档期已被预约，请选择其他日期",
               409,
             );
           else {
-            const updated = run(
+            const updated = await run(
               "UPDATE resources SET stock=stock-? WHERE id=? AND stock>=?",
               qty,
               rid,
@@ -706,7 +765,7 @@ export function createApp({
             );
             assert(updated.changes > 0, "库存不足", 409);
           }
-          const result = run(
+          const result = await run(
             "INSERT INTO orders(code,user_id,resource_id,quantity,amount,booking_date,status,channel,note,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
             `GY${Date.now()}${randomBytes(2).toString("hex")}`,
             u.id,
@@ -719,21 +778,24 @@ export function createApp({
             String(b.note || "").slice(0, 1000),
             time(),
           );
-          notify(
+          await notify(
             u.id,
             "预约提交成功",
             `“${r.name}”${d}的预约已提交，等待后台审核。`,
           );
-          audit(u, "提交预约", r.name);
+          await audit(u, "提交预约", r.name);
           return Number(result.lastInsertRowid);
         });
-        send({ ok: true, id });
+        send({
+          ok: true,
+          id,
+        });
         return;
       }
       m = p.match(/^\/api\/orders\/(\d+)$/);
       if (m && req.method === "PATCH") {
         const u = needUser(),
-          o = get(
+          o = await get(
             "SELECT o.*,r.category,r.name resource_name FROM orders o JOIN resources r ON r.id=o.resource_id WHERE o.id=?",
             Number(m[1]),
           );
@@ -760,8 +822,8 @@ export function createApp({
         );
         if (["confirm", "reject", "approveRefund", "resolve"].includes(action))
           needAdmin();
-        transaction(() => {
-          run(
+        await transaction(async () => {
+          await run(
             "UPDATE orders SET status=?,escrow=?,refund_reason=? WHERE id=?",
             to,
             to === "paid"
@@ -777,25 +839,27 @@ export function createApp({
             o.id,
           );
           if (["cancelled", "refunded"].includes(to) && !bookingType(o))
-            run(
+            await run(
               "UPDATE resources SET stock=stock+? WHERE id=?",
               o.quantity,
               o.resource_id,
             );
-          notify(
+          await notify(
             o.user_id,
             "订单状态更新",
             `${o.code} · ${o.resource_name} → ${to}。${action === "pay" ? "这是模拟支付，未扣款。" : ""}`,
           );
-          audit(u, `订单操作 ${action}`, o.code);
+          await audit(u, `订单操作 ${action}`, o.code);
         });
-        send({ ok: true });
+        send({
+          ok: true,
+        });
         return;
       }
       m = p.match(/^\/api\/orders\/(\d+)\/contract$/);
       if (m) {
         const u = needUser(),
-          o = get(
+          o = await get(
             "SELECT o.*,r.name,r.meta FROM orders o JOIN resources r ON r.id=o.resource_id WHERE o.id=?",
             Number(m[1]),
           );
@@ -818,7 +882,7 @@ export function createApp({
           categories.some((c) => c.id === b.category),
           "请选择需求分类",
         );
-        run(
+        await run(
           "INSERT INTO demands(user_id,title,category,budget,city,description,created_at) VALUES(?,?,?,?,?,?,?)",
           u.id,
           text(b.title, "标题", 80),
@@ -828,19 +892,24 @@ export function createApp({
           text(b.description, "需求说明", 2000),
           time(),
         );
-        audit(u, "发布需求", b.title);
-        notify(
+        await audit(u, "发布需求", b.title);
+        await notify(
           u.id,
           "需求等待审核",
           `“${b.title}”已提交，审核通过后公开展示。`,
         );
-        send({ ok: true });
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/comments" && req.method === "POST") {
         const u = needUser(),
           rid = int(b.resourceId, "资源编号", 1);
-        assert(get("SELECT id FROM resources WHERE id=?", rid), "资源不存在");
+        assert(
+          await get("SELECT id FROM resources WHERE id=?", rid),
+          "资源不存在",
+        );
         const content = text(b.content, "评论", 1000);
         assert(
           !/诈骗|色情|辱骂/.test(content),
@@ -855,7 +924,7 @@ export function createApp({
             (dimensions.quality + dimensions.service + dimensions.value) / 3,
           );
         }
-        run(
+        await run(
           "INSERT INTO comments(user_id,resource_id,rating,content,created_at,dimensions) VALUES(?,?,?,?,?,?)",
           u.id,
           rid,
@@ -864,8 +933,11 @@ export function createApp({
           time(),
           JSON.stringify(dimensions),
         );
-        audit(u, "提交评论", String(rid));
-        send({ ok: true, message: "已提交，后台审核后公开显示" });
+        await audit(u, "提交评论", String(rid));
+        send({
+          ok: true,
+          message: "已提交，后台审核后公开显示",
+        });
         return;
       }
       if (p === "/api/moderate" && req.method === "POST") {
@@ -874,46 +946,54 @@ export function createApp({
         assert(["approved", "rejected"].includes(b.status), "审核状态错误");
         const table = b.type === "demand" ? "demands" : "comments",
           id = int(b.id, "编号", 1),
-          r = get(`SELECT * FROM ${table} WHERE id=?`, id);
+          r = await get(`SELECT * FROM ${table} WHERE id=?`, id);
         assert(r, "内容不存在", 404);
-        run(`UPDATE ${table} SET status=? WHERE id=?`, b.status, id);
+        await run(`UPDATE ${table} SET status=? WHERE id=?`, b.status, id);
         if (b.reply && b.type === "comment")
-          run(
+          await run(
             "UPDATE comments SET reply=? WHERE id=?",
             text(b.reply, "回复", 1000),
             id,
           );
-        notify(
+        await notify(
           r.user_id,
           "内容审核结果",
           `${b.type === "demand" ? r.title : r.content.slice(0, 30)}：${b.status === "approved" ? "审核通过" : "未通过审核"}`,
         );
-        audit(u, "内容审核", `${b.type} ${id} ${b.status}`);
-        send({ ok: true });
+        await audit(u, "内容审核", `${b.type} ${id} ${b.status}`);
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/favorites" && req.method === "POST") {
         const u = needUser(),
           id = int(b.resourceId, "资源编号", 1);
-        assert(get("SELECT id FROM resources WHERE id=?", id), "资源不存在");
-        const exists = get(
+        assert(
+          await get("SELECT id FROM resources WHERE id=?", id),
+          "资源不存在",
+        );
+        const exists = await get(
           "SELECT 1 FROM favorites WHERE user_id=? AND resource_id=?",
           u.id,
           id,
         );
         if (exists)
-          run(
+          await run(
             "DELETE FROM favorites WHERE user_id=? AND resource_id=?",
             u.id,
             id,
           );
-        else run("INSERT INTO favorites VALUES(?,?)", u.id, id);
-        send({ ok: true, favorite: !exists });
+        else await run("INSERT INTO favorites VALUES(?,?)", u.id, id);
+        send({
+          ok: true,
+          favorite: !exists,
+        });
         return;
       }
       if (p === "/api/profile" && req.method === "PATCH") {
         const u = needUser();
-        run(
+        await run(
           "UPDATE users SET name=?,city=?,preference=?,verified=? WHERE id=?",
           b.name ? text(b.name, "姓名", 30) : u.name,
           b.city ? text(b.city, "城市", 30) : u.city,
@@ -923,32 +1003,41 @@ export function createApp({
           b.verify === true ? 1 : u.verified,
           u.id,
         );
-        audit(
+        await audit(
           u,
           b.verify ? "模拟身份认证" : "更新用户资料",
           "未采集真实身份证信息",
         );
-        send({ ok: true });
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/messages" && req.method === "POST") {
         const u = needUser(),
           uid = int(b.to, "接收人", 1);
-        assert(get("SELECT id FROM users WHERE id=?", uid), "接收人不存在");
-        notify(
+        assert(
+          await get("SELECT id FROM users WHERE id=?", uid),
+          "接收人不存在",
+        );
+        await notify(
           uid,
           text(b.title || "合作私信", "标题", 80),
           text(b.content, "消息", 1000),
           u.id,
         );
-        audit(u, "发送站内私信", String(uid));
-        send({ ok: true });
+        await audit(u, "发送站内私信", String(uid));
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/messages/read" && req.method === "POST") {
         const u = needUser();
-        run("UPDATE messages SET is_read=1 WHERE user_id=?", u.id);
-        send({ ok: true });
+        await run("UPDATE messages SET is_read=1 WHERE user_id=?", u.id);
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/ai" && req.method === "POST") {
@@ -959,7 +1048,7 @@ export function createApp({
           answer = `【本地模板生成示例】\n${prompt}\n\n活动标题：山歌有约，好戏广西\n推送文案：走进广西的舞台与山水，让民族歌舞点亮周末。打开桂演，查看同城演出、非遗体验与文旅套餐，选择适合你的文化之旅。\n渠道建议：小红书突出体验，公众号补充时间地点，短信保留预约入口。\n请在发布前核实场次、价格与授权。`;
         else if (b.kind === "operator") {
           needAdmin();
-          const a = analysis();
+          const a = await analysis();
           answer = `【规则分析示例，未接入大模型】\n当前模拟交易总额：¥${(a.kpis.revenue / 100).toFixed(2)}；订单${a.kpis.orders}笔，上架资源${a.kpis.resources}项。\n${a.insights.join("\n")}\n${
             /库存|异常|预警/.test(prompt)
               ? a.alerts.map((x) => x.title).join("\n")
@@ -975,7 +1064,7 @@ export function createApp({
           answer =
             "【规则客服示例】本Demo展示用户分群和权益说明；文惠卡、消费卡暂不实际扣款，相关数据通过后台“模拟数据同步”演示。";
         else if (/订单/.test(prompt)) {
-          const os = orderRows(u);
+          const os = await orderRows(u);
           answer = `【规则客服示例】你当前有${os.length}笔订单。${os
             .slice(0, 3)
             .map((o) => `${o.code}：${o.resource_name}，${o.status}`)
@@ -983,46 +1072,66 @@ export function createApp({
         } else
           answer =
             "【规则客服示例】你可以浏览资源、查看详情并预约。预约经后台确认后，可进行模拟支付。需要帮助时可询问订单、退票、改签或会员权益。本助手使用本地规则，没有连接外部AI接口。";
-        audit(u, `AI模拟 ${b.kind || "support"}`, prompt);
-        send({ answer, mock: true });
+        await audit(u, `AI模拟 ${b.kind || "support"}`, prompt);
+        send({
+          answer,
+          mock: true,
+        });
         return;
       }
       if (p === "/api/settings" && req.method === "PATCH") {
         const u = needAdmin();
         if (b.alertThreshold !== undefined)
-          run(
+          await run(
             "UPDATE settings SET value=? WHERE key=?",
             JSON.stringify(int(b.alertThreshold, "预警阈值", 0, 1000)),
             "alertThreshold",
           );
-        audit(u, "更新设置", "库存预警阈值");
-        send({ ok: true });
+        await audit(u, "更新设置", "库存预警阈值");
+        send({
+          ok: true,
+        });
         return;
       }
       if (p === "/api/availability") {
         const id = Number(url.searchParams.get("resourceId"));
         assert(
-          get("SELECT id FROM resources WHERE id=?", id),
+          await get("SELECT id FROM resources WHERE id=?", id),
           "资源不存在",
           404,
         );
         send({
-          dates: all(
+          dates: await all(
             "SELECT booking_date,status FROM orders WHERE resource_id=? AND status NOT IN ('cancelled','refunded')",
             id,
           ),
         });
         return;
       }
-      send({ error: "接口不存在" }, 404);
-    } catch (e) {
-      if (!e.status) console.error(e);
       send(
-        { error: e.status ? e.message : "服务暂时无法处理请求" },
+        {
+          error: "接口不存在",
+        },
+        404,
+      );
+    } catch (e) {
+      if (e.code === "23505")
+        Object.assign(e, { status: 409, message: "记录已存在，请刷新后重试" });
+      if (!e.status)
+        console.error("Business request failed", {
+          code: e.code || "INTERNAL_ERROR",
+        });
+      send(
+        {
+          error: e.status ? e.message : "服务暂时无法处理请求",
+        },
         e.status || 500,
       );
     }
-  });
+  };
+  const handler = createRequestHandler(db, handle);
+  const server = http.createServer(handler);
+  server.handler = handler;
   server.on("close", () => db.close());
   return server;
 }
@@ -1030,7 +1139,12 @@ if (
   process.argv[1] &&
   path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-  const server = createApp();
+  const database = process.env.DATABASE_URL
+    ? await (
+        await import("./postgres.mjs")
+      ).openPostgresStore(process.env.DATABASE_URL)
+    : undefined;
+  const server = await createApp({ database });
   const port = Number(process.env.PORT || 3001);
   server.listen(port, "0.0.0.0", () =>
     console.log(`桂演 API / 生产预览：http://localhost:${port}（模拟数据）`),
