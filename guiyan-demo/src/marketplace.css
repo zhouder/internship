@@ -256,6 +256,7 @@ textarea:focus-visible {
   padding: 0 0 0 15px;
   border-left: 1px solid #bbb8b4;
   color: #252422;
+  min-height: 28px;
 }
 .city-button select,
 .site-city select {
@@ -269,6 +270,9 @@ textarea:focus-visible {
   color: inherit;
   font-size: 15px;
   max-width: 64px;
+  height: auto;
+  min-height: 0;
+  line-height: 1.2;
 }
 .mobile-top-right .icon-button {
   color: #2b2b2a;
@@ -333,8 +337,8 @@ textarea:focus-visible {
 }
 .market-categories.mobile-categories {
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 16px 3px;
-  padding: 20px 10px;
+  gap: clamp(14px, 3.75vw, 16px) 3px;
+  padding: clamp(18px, 4.7vw, 20px) 10px;
   border: 0;
   margin: 0 14px;
   border-bottom: 1px solid #e9e7e4;
@@ -345,8 +349,8 @@ textarea:focus-visible {
   line-height: 1.45;
 }
 .mobile-categories > button > .category-glyph {
-  width: 30px;
-  height: 30px;
+  width: clamp(27px, 7vw, 30px);
+  height: clamp(27px, 7vw, 30px);
   padding: 0;
   background: none;
   border-radius: 0;
@@ -361,11 +365,11 @@ textarea:focus-visible {
   color: inherit;
 }
 .mobile-categories .category-glyph svg {
-  width: 29px;
-  height: 29px;
+  width: clamp(26px, 6.8vw, 29px);
+  height: clamp(26px, 6.8vw, 29px);
 }
 .mobile-recommend {
-  padding: 14px 10px 0;
+  padding: clamp(12px, 3.3vw, 14px) 10px 0;
 }
 .mobile-shell .section-title {
   margin-bottom: 12px;
@@ -381,7 +385,7 @@ textarea:focus-visible {
   gap: 3px;
 }
 .mobile-shell .resource-card {
-  padding: 8px;
+  padding: clamp(7px, 1.9vw, 8px);
   gap: 10px;
   margin-bottom: 9px;
   border: 1px solid #e6e5e3;
