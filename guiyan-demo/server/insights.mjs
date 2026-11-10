@@ -331,10 +331,14 @@ export function createInsights({
         detail: item.detail,
       });
     }
+    const profileIds = new Set(profiles.map((p) => p.id));
     const monthStart = shiftDay(today, -29),
       active = new Set(
         orders
-          .filter((o) => dayOf(o.created_at) >= monthStart)
+          .filter(
+            (o) =>
+              profileIds.has(o.user_id) && dayOf(o.created_at) >= monthStart,
+          )
           .map((o) => o.user_id),
       );
     const venues = resources

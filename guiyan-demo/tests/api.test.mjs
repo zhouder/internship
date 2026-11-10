@@ -1100,6 +1100,23 @@ test("场馆档期与售票上座率分开，场均票房和匹配可核验", as
   assert.ok(v.recommendations.length);
   assert.match(a.report, /模拟经营分析报告/);
 });
+test("活跃用户只统计用户档案，不把管理员测试下单算作用户增长", async () => {
+  const before = (await request("/analytics", { token: admin })).data;
+  const created = await request("/orders", {
+    token: admin,
+    method: "POST",
+    body: { resourceId: 2, date: "2027-07-09", quantity: 1 },
+  });
+  assert.equal(created.status, 200);
+  const after = (await request("/analytics", { token: admin })).data;
+  assert.equal(after.kpis.users, before.kpis.users);
+  assert.ok(after.kpis.users <= after.userSummary.total);
+  await request("/orders/" + created.data.id, {
+    token: admin,
+    method: "PATCH",
+    body: { action: "cancel" },
+  });
+});
 test(
   "PostgreSQL重新建立应用连接后仍保留数据和会话",
   { skip: !process.env.TEST_DATABASE_URL },
