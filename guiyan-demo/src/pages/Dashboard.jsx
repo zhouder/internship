@@ -10,7 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useApp } from "../state";
-import { api, exportOrders, money, shortDate } from "../api";
+import { api, exportOrders, money, shortDate, downloadText } from "../api";
 import { PageTitle, Panel, Badge, ResourceCard } from "../ui";
 
 export function Trend({ series = [] }) {
@@ -88,7 +88,7 @@ export function Trend({ series = [] }) {
                 y="245"
                 textAnchor="middle"
               >
-                {s.date.length === 10 ? s.date.slice(5) : s.date}
+                {s.label || (s.date.length === 10 ? s.date.slice(5) : s.date)}
               </text>
             );
           })}
@@ -171,6 +171,14 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
         title={analyticsPage ? "数据分析" : "运营总览"}
         subtitle="演艺资源与运营数据，一目了然"
       >
+        {analyticsPage ? (
+          <button
+            className="button"
+            onClick={() => downloadText(a.report, "桂演经营分析报告.txt")}
+          >
+            导出经营报告
+          </button>
+        ) : null}
         <select
           aria-label="统计周期"
           value={period}
@@ -191,15 +199,20 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
       </PageTitle>
       <div className="kpi-grid">
         {[
-          ["交易总额", money(a.kpis.revenue), Banknote, "已支付及已完成订单"],
+          [
+            "交易总额",
+            money(a.kpis.revenue),
+            Banknote,
+            "有效已支付金额，剔除已退款",
+          ],
           [
             "预约订单",
             a.kpis.orders + " 笔",
             CalendarDays,
-            "包含各渠道模拟订单",
+            "历史全部订单，含取消和退款",
           ],
           ["上架资源", a.kpis.resources + " 项", Layers, "覆盖全区演艺资源"],
-          ["活跃用户", a.kpis.users + " 人", Users, "模拟用户档案"],
+          ["活跃用户", a.kpis.users + " 人", Users, "近30天下单去重用户"],
         ].map(([label, value, I, desc]) => (
           <div className="kpi" key={label}>
             <I size={25} />
@@ -228,6 +241,9 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
           <Channels channels={a.channels} />
         </Panel>
       </div>
+      <p className="note">
+        趋势按北京时间支付日统计并补零；旧订单的支付、退款时间没有原始记录，已明确标为估算。周刻度显示周一至周日。订单总数包含取消和退款。
+      </p>
       {analyticsPage ? (
         <>
           <div className="two-col">
@@ -339,6 +355,11 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
                     <th>已预约天数</th>
                     <th>30天档期占用率</th>
                     <th>模拟交易额</th>
+                    <th>30天闲置率</th>
+                    <th>热门预约日</th>
+                    <th>关联演出场次</th>
+                    <th>售票上座率</th>
+                    <th>场均票房</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -353,13 +374,53 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
                         {v.occupancy}%
                       </td>
                       <td>{money(v.revenue)}</td>
+                      <td>{v.idleRate}%</td>
+                      <td>{v.peak}</td>
+                      <td>{v.performances}场</td>
+                      <td>
+                        {v.seatOccupancy === null
+                          ? "暂无关联售票样本"
+                          : v.seatOccupancy + "%"}
+                      </td>
+                      <td>
+                        {v.averageRevenue === null
+                          ? "暂无样本"
+                          : money(v.averageRevenue)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <p className="note">
-              占用率为当前订单中的去重预约日数÷30，非真实场馆上座率。
+              档期占用率仅取未来30天去重租赁日期；上座率按关联剧目的已支付票数÷相应场次配额计算。请在“演艺资源→编辑剧目”关联场馆。热门预约日按星期统计，当前不采集小时档期。
+            </p>
+          </Panel>
+          <Panel title="场馆适配剧目建议">
+            <div className="venue-recommendations">
+              {a.venues.map((v) => (
+                <article key={v.id}>
+                  <h3>{v.name}</h3>
+                  <ol>
+                    {v.recommendations.map((r) => (
+                      <li key={r.id}>
+                        <button
+                          className="text-button"
+                          onClick={() =>
+                            onOpen(data.resources.find((x) => x.id === r.id))
+                          }
+                        >
+                          {r.name}
+                        </button>{" "}
+                        · {r.reason}
+                      </li>
+                    ))}
+                  </ol>
+                </article>
+              ))}
+            </div>
+            <p className="note">
+              按场馆介绍、设施、演出类型和城市匹配的本地建议；正式排期仍需人工确认。
             </p>
           </Panel>
         </>
@@ -425,7 +486,7 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
         </div>
       )}
       <p className="data-caption">
-        所有用户、交易和经营指标均为模拟数据 · 演示基准日 {data.today}
+        所有用户、交易和经营指标均为模拟数据 · 统计日期 {data.today}
       </p>
     </>
   );

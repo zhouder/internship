@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 
 import { schema } from "./schema.mjs";
 import { seed } from "./demo-data.mjs";
+import { upgradeColumns } from "./review-upgrade.mjs";
 export { categories, hashPassword } from "./demo-data.mjs";
 
 export function openDatabase(filename) {
@@ -22,5 +23,16 @@ export function openDatabase(filename) {
     );
   }
   if (!db.prepare("SELECT COUNT(*) AS n FROM users").get().n) seed(db);
+  for (const [table, columns] of Object.entries(upgradeColumns)) {
+    const existing = new Set(
+      db
+        .prepare(`PRAGMA table_info(${table})`)
+        .all()
+        .map((c) => c.name),
+    );
+    for (const [name, type] of Object.entries(columns))
+      if (!existing.has(name))
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${type}`);
+  }
   return db;
 }

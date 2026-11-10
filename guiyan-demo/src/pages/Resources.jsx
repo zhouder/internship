@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../state";
 import { api, money, downloadText } from "../api";
+import { matchesSearch } from "../search";
 import {
   PageTitle,
   SearchBox,
@@ -29,10 +30,11 @@ export function ResourceForm({ resource, onClose }) {
     category: resource?.category || "show",
     city: resource?.city || "南宁",
     price: resource ? resource.price / 100 : 198,
-    stock: resource?.stock ?? 100,
+    stock: resource?.daily_capacity ?? resource?.stock ?? 100,
     unit: resource?.unit || "张",
     description: resource?.description || "",
     capacity: resource?.capacity || 0,
+    venueId: resource?.meta?.venueId || 0,
   });
   const change = (k, v) => setF((s) => ({ ...s, [k]: v }));
   async function submit(e) {
@@ -42,6 +44,7 @@ export function ResourceForm({ resource, onClose }) {
       price: Math.round(Number(f.price) * 100),
       stock: Number(f.stock),
       capacity: Number(f.capacity),
+      meta: { venueId: Number(f.venueId) },
       tags: [
         data.categories.find((c) => c.id === f.category)?.name,
         "平台自营",
@@ -108,7 +111,15 @@ export function ResourceForm({ resource, onClose }) {
               onChange={(e) => change("unit", e.target.value)}
             />
           </FormField>
-          <FormField label="库存">
+          <FormField
+            label={
+              ["show", "heritage", "tourism", "digital", "artist"].includes(
+                f.category,
+              )
+                ? "每日配额（按日期独立）"
+                : "库存（服务类不扣减）"
+            }
+          >
             <input
               type="number"
               required
@@ -118,6 +129,23 @@ export function ResourceForm({ resource, onClose }) {
             />
           </FormField>
         </div>
+        {f.category === "show" ? (
+          <FormField label="关联售票场馆（用于经营分析）">
+            <select
+              value={f.venueId}
+              onChange={(e) => change("venueId", e.target.value)}
+            >
+              <option value="0">尚未关联</option>
+              {data.resources
+                .filter((r) => r.category === "venue")
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+            </select>
+          </FormField>
+        ) : null}
         <FormField label="资源介绍">
           <textarea
             required
@@ -147,10 +175,7 @@ export function Resources({
     (r) =>
       (!category || r.category === category) &&
       (!city || r.city === city) &&
-      (!query ||
-        (r.name + r.description + r.tags.join(""))
-          .toLowerCase()
-          .includes(query.toLowerCase())),
+      matchesSearch(r, query),
   );
   if (sort === "price") rows = [...rows].sort((a, b) => a.price - b.price);
   if (sort === "rating") rows = [...rows].sort((a, b) => b.rating - a.rating);
@@ -295,7 +320,7 @@ function EquipmentPreview() {
     </div>
   );
 }
-function DigitalPreview() {
+function DigitalPreview({ image }) {
   const [playing, setPlaying] = useState(false),
     [progress, setProgress] = useState(0);
   useEffect(() => {
@@ -308,7 +333,7 @@ function DigitalPreview() {
   }, [playing]);
   return (
     <div className="digital-preview">
-      <img src="/images/performance.png" alt="数字演出演示封面" />
+      <img src={image} alt="数字演出演示封面" />
       <button className="button primary" onClick={() => setPlaying((p) => !p)}>
         {playing ? "暂停模拟播放" : "开始模拟点播"}
       </button>
@@ -329,21 +354,46 @@ export function ResourceDetail({
   const { data, action, busy, setToast } = useApp();
   const r = data.resources.find((x) => x.id === resource.id) || resource;
   const [tab, setTab] = useState("detail"),
-    [date, setDate] = useState("2026-11-16"),
+    [date, setDate] = useState(() =>
+      new Date(new Date(data.today + "T00:00:00Z").getTime() + 7 * 86400000)
+        .toISOString()
+        .slice(0, 10),
+    ),
     [qty, setQty] = useState(1),
     [note, setNote] = useState(""),
     [content, setContent] = useState(""),
     [rating, setRating] = useState(5),
     [serviceRating, setServiceRating] = useState(5),
     [valueRating, setValueRating] = useState(5),
-    [availability, setAvailability] = useState([]);
+    [availability, setAvailability] = useState([]),
+    [remaining, setRemaining] = useState(null),
+    [inventoryLoading, setInventoryLoading] = useState(true),
+    [inventoryError, setInventoryError] = useState("");
   const stableClose = useCallback(onClose, [onClose]);
   useEffect(() => {
     api("/resources/" + r.id + "/view", { method: "POST" }).catch(() => {});
-    api("/availability?resourceId=" + r.id)
-      .then((v) => setAvailability(v.dates))
-      .catch(() => {});
   }, [r.id]);
+  useEffect(() => {
+    let active = true;
+    setInventoryLoading(true);
+    setInventoryError("");
+    api("/availability?resourceId=" + r.id + "&date=" + date)
+      .then((v) => {
+        if (active) {
+          setAvailability(v.dates);
+          setRemaining(v.available);
+        }
+      })
+      .catch((e) => {
+        if (active) setInventoryError(e.message);
+      })
+      .finally(() => {
+        if (active) setInventoryLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [r.id, date, data.orders, data.resources]);
   const rental = ["venue", "equipment"].includes(r.category),
     favorite = data.favorites.includes(r.id),
     comments = data.comments.filter(
@@ -401,6 +451,19 @@ export function ResourceDetail({
             {money(r.price)}
             <small>/{r.unit}</small>
           </strong>
+          {rental ? (
+            <p className="resource-hint">
+              按天独占，每个日期仅接受一单预约，数量固定为1。
+            </p>
+          ) : r.category === "service" ? (
+            <p className="resource-hint">
+              可预约，服务需求由平台确认；不显示商品库存。
+            </p>
+          ) : r.inventory_mode === "date" ? (
+            <p className="resource-hint">
+              按日期独立配额，选定日期后查看余量。
+            </p>
+          ) : null}
           <button
             className={`button ${favorite ? "selected" : ""}`}
             onClick={() => {
@@ -476,14 +539,28 @@ export function ResourceDetail({
                       playback: "播放说明",
                       lastSync: "最近模拟同步",
                       syncResult: "渠道同步结果",
+                      venueId: "关联场馆",
+                      venueLinkSource: "关联说明",
                     }[k] || k}
                   </span>
-                  <strong>{Array.isArray(v) ? v.join("、") : String(v)}</strong>
+                  <strong>
+                    {k === "venueId"
+                      ? data.resources.find((x) => x.id === Number(v))?.name ||
+                        "尚未关联"
+                      : Array.isArray(v)
+                        ? v.join("、")
+                        : String(v)}
+                  </strong>
                 </div>
               ))}
           </div>
           {r.category === "equipment" ? <EquipmentPreview /> : null}
-          {r.category === "digital" ? <DigitalPreview /> : null}
+          {r.category === "digital" ? <DigitalPreview image={r.image} /> : null}
+          {r.category === "copyright" ? (
+            <p className="note">
+              授权范围、期限及地域见上方字段。仅演示模拟授权，不做真实版权确权。
+            </p>
+          ) : null}
           {r.category === "venue" ? (
             <div className="seat-map">
               <h3>座位布局示意</h3>
@@ -542,19 +619,46 @@ export function ResourceDetail({
               />
             </FormField>
             <FormField
-              label={rental ? "数量（按天独占）" : `数量 · 剩余${r.stock}`}
+              label={
+                rental
+                  ? "数量（按天独占）"
+                  : r.category === "service"
+                    ? "预约数量"
+                    : `数量 · ${inventoryLoading ? "余量查询中" : inventoryError ? "余量查询失败" : (r.inventory_mode === "date" ? "所选日期剩余" : "剩余") + remaining}`
+              }
             >
               <input
                 type="number"
                 required
                 min="1"
-                max={rental ? 1 : Math.min(100, r.stock)}
+                max={
+                  rental
+                    ? 1
+                    : remaining === null
+                      ? 100
+                      : Math.max(1, Math.min(100, remaining))
+                }
                 disabled={rental}
                 value={qty}
                 onChange={(e) => setQty(e.target.value)}
               />
             </FormField>
           </div>
+          {inventoryError ? (
+            <p role="alert" className="stock-warning">
+              {inventoryError}，请重新选择日期后重试。
+            </p>
+          ) : !inventoryLoading &&
+            remaining !== null &&
+            remaining <= data.inventoryThreshold ? (
+            <p className="stock-warning">
+              {remaining === 0
+                ? "所选日期或资源已约满，请更换日期或资源。"
+                : "库存紧张，当前剩余" +
+                  remaining +
+                  (r.inventory_mode === "date" ? "；其他日期独立计算。" : "。")}
+            </p>
+          ) : null}
           <FormField label="备注 / 合作需求">
             <textarea
               rows={3}
@@ -568,7 +672,14 @@ export function ResourceDetail({
             合计 <strong>{money(r.price * Number(qty || 1))}</strong>
           </div>
           <p className="note">所有支付均为模拟，不收取真实费用。</p>
-          <SubmitButton busy={busy}>提交预约</SubmitButton>
+          <SubmitButton
+            busy={busy}
+            disabled={
+              busy || inventoryLoading || !!inventoryError || remaining === 0
+            }
+          >
+            提交预约
+          </SubmitButton>
         </form>
       ) : null}
       {tab === "comments" ? (

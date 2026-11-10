@@ -21,7 +21,10 @@ export function AI({ mobile = false }) {
     setLoading(true);
     try {
       const r = await api("/ai", { method: "POST", body: { prompt, kind } });
-      setMessages((m) => [...m, { role: "assistant", text: r.answer }]);
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", text: r.answer, sections: r.sections },
+      ]);
     } catch (e) {
       setToast(e.message);
     } finally {
@@ -74,7 +77,24 @@ export function AI({ mobile = false }) {
                 <span className="chat-avatar">
                   {m.role === "user" ? "我" : <Sparkles size={17} />}
                 </span>
-                <div>{m.text}</div>
+                <div>
+                  {m.sections ? (
+                    <div className="copy-sections">
+                      <small>本地多渠道模板草稿</small>
+                      <h3>{m.sections.title}</h3>
+                      <p>{m.sections.body}</p>
+                      {m.sections.channels.map((c) => (
+                        <section key={c.name}>
+                          <h4>{c.name}</h4>
+                          <p>{c.content}</p>
+                        </section>
+                      ))}
+                      <small>{m.sections.notes.join("；")}</small>
+                    </div>
+                  ) : (
+                    m.text
+                  )}
+                </div>
               </div>
             ))}
             {loading ? <p className="muted">正在整理回答…</p> : null}
@@ -109,7 +129,15 @@ export function AI({ mobile = false }) {
         <Panel title="试试这些问题">
           <div className="prompt-list">
             {(kind === "operator"
-              ? ["当前交易数据怎么样？", "哪些资源热销？", "检查库存和异常预警"]
+              ? [
+                  "当前交易数据怎么样？",
+                  "最近用户增长和活跃怎么样？",
+                  "各渠道卖得怎么样？",
+                  "场馆档期和上座率如何？",
+                  "哪些资源热销？",
+                  "检查库存和异常预警",
+                  "生成经营报告",
+                ]
               : kind === "copy"
                 ? [
                     "给民族歌舞剧写一段小红书文案",

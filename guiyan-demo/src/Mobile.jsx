@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useApp } from "./state";
 import { api } from "./api";
+import { matchesSearch, rankRecommendations } from "./search";
 import { LoginModal } from "./Login";
 import {
   SearchBox,
@@ -182,37 +183,8 @@ export function Profile({ onLogin, onNavigate }) {
     </>
   );
 }
-export function Messages() {
-  const { data, action } = useApp();
-  return (
-    <>
-      <PageTitle title="消息与私信">
-        <button
-          className="text-button"
-          onClick={() => action("/messages/read", {}, "消息已全部标为已读")}
-        >
-          全部已读
-        </button>
-      </PageTitle>
-      <div className="message-list">
-        {data.messages.map((m) => (
-          <article key={m.id} className={m.is_read ? "" : "unread"}>
-            <div>
-              <MessageCircle size={19} />
-              <h3>{m.title}</h3>
-              {!m.is_read ? <i /> : null}
-            </div>
-            <p>{m.content}</p>
-            <small>
-              {m.sender_name || "平台"} · {m.created_at.slice(0, 10)}
-            </small>
-          </article>
-        ))}
-        {!data.messages.length ? <Empty text="暂无消息" /> : null}
-      </div>
-    </>
-  );
-}
+export { Messages } from "./Messages";
+import { Messages } from "./Messages";
 export function Mobile({ onOpen }) {
   const { data, action, setToast } = useApp();
   const [page, setPage] = useState("home"),
@@ -262,18 +234,14 @@ export function Mobile({ onOpen }) {
     (r) =>
       (!category || r.category === category) &&
       (!city || r.city === city) &&
-      (!query || (r.name + r.description + r.tags.join("")).includes(query)),
+      matchesSearch(r, query),
   );
   if (sort === "price")
     resources = [...resources].sort((a, b) => a.price - b.price);
   else if (sort === "rating")
     resources = [...resources].sort((a, b) => b.rating - a.rating);
   else if (data.user)
-    resources = [...resources].sort(
-      (a, b) =>
-        Number(b.category === data.user.preference) -
-        Number(a.category === data.user.preference),
-    );
+    resources = rankRecommendations(resources, data.recommendations);
   const home = page === "home",
     listing = page === "resources" || page === "favorites";
   return (

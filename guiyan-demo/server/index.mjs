@@ -6,8 +6,11 @@ import path from "node:path";
 import { hashPassword, categories } from "./demo-data.mjs";
 import { openSqliteStore, createRequestHandler } from "./database.mjs";
 import { categoryImages } from "./catalog-content.mjs";
+import { createInsights, dayOf, shiftDay } from "./insights.mjs";
+import { inventoryMode } from "./review-upgrade.mjs";
+import { operatorAnswer, supportAnswer, copyAnswer } from "./assistants.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const today = "2026-11-09";
+const currentDay = () => dayOf(new Date().toISOString());
 const time = () => new Date().toISOString();
 const validStatuses = ["published", "draft"];
 function assert(condition, message, status = 400) {
@@ -38,7 +41,7 @@ function date(value) {
       /^\d{4}-\d{2}-\d{2}$/.test(value) &&
       !isNaN(new Date(value).valueOf()) &&
       new Date(value).toISOString().slice(0, 10) === value &&
-      value >= today,
+      value >= currentDay(),
     "请选择有效日期，且不能早于演示基准日",
   );
   return value;
@@ -46,6 +49,7 @@ function date(value) {
 const safeUser = ({ password, ...u }) => u;
 const resourceRow = (r) => ({
   ...r,
+  inventory_mode: inventoryMode(r),
   tags: JSON.parse(r.tags),
   meta: JSON.parse(r.meta),
 });
@@ -67,14 +71,23 @@ export async function createApp({
       detail,
       time(),
     );
-  const notify = async (uid, title, content, sender = 1) =>
+  const notify = async (
+    uid,
+    title,
+    content,
+    sender = 1,
+    kind = "system",
+    relatedOrder = null,
+  ) =>
     await run(
-      "INSERT INTO messages(user_id,sender_id,title,content,created_at) VALUES(?,?,?,?,?)",
+      "INSERT INTO messages(user_id,sender_id,title,content,created_at,kind,related_order_id) VALUES(?,?,?,?,?,?,?)",
       uid,
       sender,
       title,
       content,
       time(),
+      kind,
+      relatedOrder,
     );
   function transaction(fn) {
     // Write requests already run atomically on one database connection.
@@ -86,182 +99,32 @@ export async function createApp({
       ...(isAdmin(user) ? [] : [user?.id || 0]),
     );
   }
-  async function profileRows() {
-    return (
-      await all(
-        `SELECT u.id,u.username,u.name,u.city,u.age,u.gender,u.channel,u.preference,u.verified,u.role,COUNT(o.id) AS order_count,COALESCE(SUM(CASE WHEN o.status IN ('paid','completed','disputed','refund_requested') THEN o.amount ELSE 0 END),0) AS spent,MAX(o.created_at) AS last_order,(SELECT COUNT(*) FROM favorites f WHERE f.user_id=u.id) AS favorite_count,(SELECT COUNT(*) FROM events e WHERE e.user_id=u.id AND e.type='view') AS view_count FROM users u LEFT JOIN orders o ON o.user_id=u.id WHERE u.role<>'admin' GROUP BY u.id`,
-      )
-    ).map((u) => ({
-      ...u,
-      portrait: {
-        pricePreference: u.order_count
-          ? Math.round(u.spent / u.order_count)
-          : 0,
-        balance: 0,
-        favorites: u.favorite_count,
-        views: u.view_count,
-        purchaseWindow: u.last_order ? u.last_order.slice(11, 16) : "暂无",
-        payment: "模拟支付",
-        repeat: u.order_count > 1 ? "有复购" : "暂无复购",
-        lastOrder: u.last_order,
-      },
-      tags: [
-        u.spent > 1000000
-          ? "高价值用户"
-          : u.order_count > 2
-            ? "潜力会员"
-            : "新用户",
-        u.order_count > 4 ? "高频观演" : "待培育",
-        categories.find((c) => c.id === u.preference)?.name || "综合兴趣",
-      ],
-      suggestion:
-        u.spent > 1000000
-          ? "推荐剧场专场与会员组合权益"
-          : u.order_count > 2
-            ? "推送同城演出及复购优惠"
-            : "推荐低门槛非遗体验与首购活动",
-    }));
-  }
-  async function analysis(period = "day") {
-    assert(
-      ["day", "week", "month", "quarter"].includes(period),
-      "无效统计周期",
+  const { profileRows, analysis, recommendations } = createInsights({
+    all,
+    get,
+    orderRows,
+    categories,
+    today: currentDay,
+    resourceRow,
+  });
+  async function available(r, d) {
+    const mode = inventoryMode(r);
+    if (mode === "none") return null;
+    const held = await get(
+      "SELECT COALESCE(SUM(quantity),0) AS n FROM orders WHERE resource_id=? AND booking_date=? AND status NOT IN ('cancelled','refunded')",
+      r.id,
+      d,
     );
-    const orders = await orderRows({
-        role: "admin",
-      }),
-      paid = orders.filter((o) =>
-        ["paid", "completed", "disputed", "refund_requested"].includes(
-          o.status,
-        ),
-      );
-    const daily = new Map(),
-      channels = new Map();
-    paid.forEach((o) => {
-      const d = o.created_at.slice(0, 10),
-        dt = new Date(d);
-      let key = d;
-      if (period === "week") {
-        dt.setUTCDate(dt.getUTCDate() - ((dt.getUTCDay() + 6) % 7));
-        key = dt.toISOString().slice(0, 10);
-      }
-      if (period === "month") key = d.slice(0, 7);
-      if (period === "quarter")
-        key = `${d.slice(0, 4)} Q${Math.floor((Number(d.slice(5, 7)) - 1) / 3) + 1}`;
-      const cell = daily.get(key) || {
-        date: key,
-        amount: 0,
-        count: 0,
-      };
-      cell.amount += o.amount;
-      cell.count++;
-      daily.set(key, cell);
-      channels.set(o.channel, (channels.get(o.channel) || 0) + o.amount);
-    });
-    const resources = (await all("SELECT * FROM resources")).map(resourceRow);
-    const ranking = resources
-      .map((r) => ({
-        ...r,
-        sales: paid.filter((o) => o.resource_id === r.id).length,
-        revenue: paid
-          .filter((o) => o.resource_id === r.id)
-          .reduce((a, o) => a + o.amount, 0),
-      }))
-      .sort((a, b) => b.revenue - a.revenue);
-    const threshold = JSON.parse(
-      (await get("SELECT value FROM settings WHERE key=?", "alertThreshold"))
-        .value,
-    );
-    const alerts = resources
-      .filter((r) => !bookingType(r) && r.stock <= threshold)
-      .map((r) => ({
-        severity: "warning",
-        title: `${r.name}库存仅剩${r.stock}`,
-        detail: "建议补充库存或暂时下架，避免超卖。",
-      }));
-    const pending = orders.filter((o) => o.status === "pending").length;
-    if (pending)
-      alerts.push({
-        severity: "info",
-        title: `${pending}笔预约等待确认`,
-        detail: "请在交易管理中确认档期和资源，及时处理预约。",
-      });
-    const abnormal = orders.filter(
-      (o) => o.status === "disputed" || o.status === "refund_requested",
-    );
-    if (abnormal.length)
-      alerts.push({
-        severity: "warning",
-        title: `${abnormal.length}笔售后或纠纷待处理`,
-        detail: "请核实退款和申诉信息。",
-      });
-    for (const event of await all(
-      "SELECT * FROM events WHERE type LIKE 'alert.%' ORDER BY id DESC LIMIT 5",
-    )) {
-      const item = JSON.parse(event.detail);
-      alerts.push({
-        id: event.id,
-        severity: "warning",
-        title: item.title + "（模拟事件）",
-        detail: item.detail,
-      });
-    }
-    const activeUsers = new Set(
-      orders
-        .filter(
-          (o) =>
-            o.created_at.slice(0, 10) >= "2026-10-10" &&
-            o.created_at.slice(0, 10) <= "2026-11-09",
-        )
-        .map((o) => o.user_id),
-    );
-    return {
-      period,
-      today,
-      kpis: {
-        revenue: paid.reduce((a, o) => a + o.amount, 0),
-        orders: orders.length,
-        resources: resources.filter((r) => r.status === "published").length,
-        users: activeUsers.size,
-      },
-      series: [...daily.values()].sort((a, b) => a.date.localeCompare(b.date)),
-      channels: [...channels].map(([name, amount]) => ({
-        name,
-        amount,
-      })),
-      ranking,
-      alerts,
-      insights: [
-        `交易额最高的资源是“${ranking[0]?.name || "暂无"}”，可优先安排联动推广。`,
-        `当前${pending}笔预约待确认，建议安排专人跟进。`,
-        `高价值用户${(await profileRows()).filter((u) => u.spent > 1000000).length}人，可推荐专场合作与会员组合权益。`,
-      ],
-      venues: resources
-        .filter((r) => r.category === "venue")
-        .map((r) => {
-          const booked = orders.filter(
-            (o) =>
-              o.resource_id === r.id &&
-              !["cancelled", "refunded"].includes(o.status),
-          );
-          return {
-            id: r.id,
-            name: r.name,
-            bookedDays: new Set(booked.map((o) => o.booking_date)).size,
-            occupancy: Math.min(
-              100,
-              Math.round(
-                (new Set(booked.map((o) => o.booking_date)).size / 30) * 100,
-              ),
-            ),
-            revenue: paid
-              .filter((o) => o.resource_id === r.id)
-              .reduce((a, o) => a + o.amount, 0),
-          };
-        }),
-    };
+    return mode === "rental"
+      ? held.n
+        ? 0
+        : 1
+      : mode === "date"
+        ? Math.max(0, Number(r.daily_capacity ?? r.stock) - Number(held.n))
+        : r.stock;
   }
   const handle = async (req, res) => {
+    const today = currentDay();
     const send = (value, status = 200) => {
       res.writeHead(status, {
         "Content-Type": "application/json; charset=utf-8",
@@ -459,6 +322,20 @@ export async function createApp({
             `SELECT r.*,COALESCE((SELECT AVG(rating) FROM comments c WHERE c.resource_id=r.id AND c.status='approved'),0) rating,(SELECT COUNT(*) FROM comments c WHERE c.resource_id=r.id AND c.status='approved') review_count FROM resources r ${isAdmin(session) ? "" : "WHERE r.status='published'"} ORDER BY r.id`,
           )
         ).map(resourceRow);
+        const inventoryThreshold = Number(
+          JSON.parse(
+            (
+              await get(
+                "SELECT value FROM settings WHERE key=?",
+                "alertThreshold",
+              )
+            )?.value || "5",
+          ),
+        );
+        for (const resource of resources)
+          resource.low_stock =
+            inventoryMode(resource) === "global" &&
+            resource.stock <= inventoryThreshold;
         const demands = await all(
           `SELECT d.*,u.name AS user_name FROM demands d JOIN users u ON u.id=d.user_id ${isAdmin(session) ? "" : "WHERE d.status='approved' OR d.user_id=?"} ORDER BY d.id DESC`,
           ...(isAdmin(session) ? [] : [session?.id || 0]),
@@ -470,9 +347,14 @@ export async function createApp({
         send({
           mode: "mock",
           today,
+          database: db.dialect,
           user: session ? safeUser(session) : null,
           categories,
           resources,
+          recommendations: session
+            ? await recommendations(session, resources)
+            : [],
+          inventoryThreshold,
           demands,
           comments,
           orders: session ? await orderRows(session) : [],
@@ -485,15 +367,24 @@ export async function createApp({
               ).map((f) => f.resource_id)
             : [],
           messages: session
+            ? (
+                await all(
+                  "SELECT m.*,u.name AS sender_name,t.name AS recipient_name FROM messages m LEFT JOIN users u ON u.id=m.sender_id LEFT JOIN users t ON t.id=m.user_id WHERE (m.user_id=? AND m.status='approved') OR (m.sender_id=? AND m.kind='private') ORDER BY m.id DESC",
+                  session.id,
+                  session.id,
+                )
+              ).map((m) => ({
+                ...m,
+                is_read: m.user_id === session.id ? m.is_read : 1,
+              }))
+            : [],
+          members: session ? await all("SELECT id,name FROM users") : [],
+          profiles: isAdmin(session) ? await profileRows() : [],
+          moderatedMessages: isAdmin(session)
             ? await all(
-                "SELECT m.*,u.name AS sender_name FROM messages m LEFT JOIN users u ON u.id=m.sender_id WHERE m.user_id=? ORDER BY m.id DESC",
-                session.id,
+                "SELECT m.*,u.name AS user_name,s.name AS sender_name FROM messages m LEFT JOIN users u ON u.id=m.user_id LEFT JOIN users s ON s.id=m.sender_id WHERE m.kind='private' ORDER BY m.id DESC LIMIT 100",
               )
             : [],
-          members: session
-            ? await all("SELECT id,name FROM users WHERE role<>?", "admin")
-            : [],
-          profiles: isAdmin(session) ? await profileRows() : [],
           analytics: isAdmin(session) ? await analysis() : null,
           settings: isAdmin(session)
             ? Object.fromEntries(
@@ -513,7 +404,12 @@ export async function createApp({
       }
       if (p === "/api/analytics") {
         needAdmin();
-        send(await analysis(url.searchParams.get("period") || "day"));
+        const period = url.searchParams.get("period") || "day";
+        assert(
+          ["day", "week", "month", "quarter"].includes(period),
+          "无效统计周期",
+        );
+        send(await analysis(period));
         return;
       }
       if (p === "/api/alerts" && req.method === "POST") {
@@ -576,7 +472,19 @@ export async function createApp({
         const content =
           "\uFEFF" +
           [
-            ["订单编号", "资源", "用户", "金额(元)", "日期", "状态", "渠道"],
+            [
+              "订单编号",
+              "资源",
+              "用户",
+              "金额(元)",
+              "演出/使用日期",
+              "状态",
+              "渠道",
+              "下单时间(北京时间)",
+              "支付时间(北京时间)",
+              "退款时间(北京时间)",
+              "历史时间说明",
+            ],
             ...rows.map((o) => [
               o.code,
               o.resource_name,
@@ -585,6 +493,34 @@ export async function createApp({
               o.booking_date,
               o.status,
               o.channel,
+              new Date(new Date(o.created_at).getTime() + 8 * 3600000)
+                .toISOString()
+                .slice(0, 19)
+                .replace("T", " "),
+              o.paid_at
+                ? new Date(new Date(o.paid_at).getTime() + 8 * 3600000)
+                    .toISOString()
+                    .slice(0, 19)
+                    .replace("T", " ")
+                : "",
+              o.refunded_at
+                ? new Date(new Date(o.refunded_at).getTime() + 8 * 3600000)
+                    .toISOString()
+                    .slice(0, 19)
+                    .replace("T", " ")
+                : "",
+              [
+                o.paid_at
+                  ? o.time_estimated
+                    ? "支付时间：旧记录按下单时间估算"
+                    : "支付时间：实际操作时间"
+                  : "未支付",
+                o.refunded_at
+                  ? o.refunded_time_estimated
+                    ? "退款时间：旧记录按下单时间估算"
+                    : "退款时间：实际操作时间"
+                  : "未退款",
+              ].join("；"),
             ]),
           ]
             .map((r) => r.map(csv).join(","))
@@ -613,9 +549,11 @@ export async function createApp({
           "无效模拟渠道",
         );
         const r = await get(
-          "SELECT * FROM resources WHERE category='show' AND status='published' AND stock>0 LIMIT 1",
+          "SELECT * FROM resources WHERE category='show' AND status='published' LIMIT 1",
         );
         assert(r, "无可同步的演出资源");
+        const syncDate = shiftDay(today, 40);
+        assert((await available(r, syncDate)) > 0, "所选场次库存不足", 409);
         await transaction(async () => {
           await run(
             "INSERT INTO orders(code,user_id,resource_id,quantity,amount,booking_date,status,channel,note,escrow,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
@@ -624,14 +562,23 @@ export async function createApp({
             r.id,
             1,
             r.price,
-            "2026-12-20",
+            syncDate,
             "paid",
             channel,
             "模拟渠道同步订单",
             "模拟托管中",
             time(),
           );
-          await run("UPDATE resources SET stock=stock-1 WHERE id=?", r.id);
+          const synced = await get(
+            "SELECT id FROM orders WHERE resource_id=? AND user_id=? ORDER BY id DESC LIMIT 1",
+            r.id,
+            2,
+          );
+          await run(
+            "UPDATE orders SET paid_at=?,stock_mode='date' WHERE id=?",
+            time(),
+            synced.id,
+          );
           await audit(
             u,
             "模拟数据同步",
@@ -668,6 +615,12 @@ export async function createApp({
           time(),
         );
         await audit(u, "新增资源", b.name);
+        if (inventoryMode(b) === "date")
+          await run(
+            "UPDATE resources SET daily_capacity=? WHERE id=?",
+            b.stock ?? 100,
+            Number(result.lastInsertRowid),
+          );
         send({
           ok: true,
           id: Number(result.lastInsertRowid),
@@ -692,6 +645,36 @@ export async function createApp({
           r.id,
         );
         await audit(u, "修改资源", r.name);
+        if (b.stock !== undefined && inventoryMode(r) === "date")
+          await run(
+            "UPDATE resources SET daily_capacity=? WHERE id=?",
+            b.stock,
+            r.id,
+          );
+        if (b.meta !== undefined) {
+          assert(
+            b.meta && typeof b.meta === "object" && !Array.isArray(b.meta),
+            "扩展信息格式错误",
+          );
+          const meta = JSON.parse(r.meta);
+          if (b.meta.venueId !== undefined) {
+            const venueId = int(Number(b.meta.venueId), "关联场馆", 0);
+            if (venueId)
+              assert(
+                await get(
+                  "SELECT id FROM resources WHERE id=? AND category='venue'",
+                  venueId,
+                ),
+                "关联场馆不存在",
+              );
+            meta.venueId = venueId;
+          }
+          await run(
+            "UPDATE resources SET meta=? WHERE id=?",
+            JSON.stringify(meta),
+            r.id,
+          );
+        }
         send({
           ok: true,
         });
@@ -761,7 +744,9 @@ export async function createApp({
               "该档期已被预约，请选择其他日期",
               409,
             );
-          else {
+          else if (inventoryMode(r) === "date") {
+            assert((await available(r, d)) >= qty, "所选日期库存不足", 409);
+          } else if (inventoryMode(r) === "global") {
             const updated = await run(
               "UPDATE resources SET stock=stock-? WHERE id=? AND stock>=?",
               qty,
@@ -785,10 +770,18 @@ export async function createApp({
             String(b.note || "").slice(0, 1000),
             time(),
           );
+          await run(
+            "UPDATE orders SET stock_mode=? WHERE id=?",
+            inventoryMode(r),
+            Number(result.lastInsertRowid),
+          );
           await notify(
             u.id,
             "预约提交成功",
             `“${r.name}”${d}的预约已提交，等待后台审核。`,
+            1,
+            "system",
+            Number(result.lastInsertRowid),
           );
           await audit(u, "提交预约", r.name);
           return Number(result.lastInsertRowid);
@@ -817,6 +810,8 @@ export async function createApp({
           cancel: [["pending", "confirmed"], "cancelled"],
           refund: ["paid", "refund_requested"],
           approveRefund: [["refund_requested", "disputed"], "refunded"],
+          rejectRefund: ["refund_requested", "paid"],
+          rejectDispute: ["disputed", "paid"],
           dispute: ["paid", "disputed"],
           resolve: ["disputed", "completed"],
         };
@@ -827,8 +822,20 @@ export async function createApp({
           "当前状态不允许该操作",
           409,
         );
-        if (["confirm", "reject", "approveRefund", "resolve"].includes(action))
+        if (
+          [
+            "confirm",
+            "reject",
+            "approveRefund",
+            "resolve",
+            "rejectRefund",
+            "rejectDispute",
+          ].includes(action)
+        )
           needAdmin();
+        const decision = ["rejectRefund", "rejectDispute"].includes(action)
+          ? text(b.reason, "拒绝原因", 500)
+          : null;
         await transaction(async () => {
           await run(
             "UPDATE orders SET status=?,escrow=?,refund_reason=? WHERE id=?",
@@ -845,7 +852,37 @@ export async function createApp({
               : o.refund_reason,
             o.id,
           );
-          if (["cancelled", "refunded"].includes(to) && !bookingType(o))
+          if (action === "pay")
+            await run(
+              "UPDATE orders SET paid_at=?,time_estimated=0,refund_decision=? WHERE id=?",
+              time(),
+              "",
+              o.id,
+            );
+          if (to === "refunded")
+            await run(
+              "UPDATE orders SET refunded_at=?,refunded_time_estimated=0,refund_decision=? WHERE id=?",
+              time(),
+              "审核通过，已模拟退款",
+              o.id,
+            );
+          if (["refund", "dispute"].includes(action))
+            await run(
+              "UPDATE orders SET refund_decision=? WHERE id=?",
+              "",
+              o.id,
+            );
+          if (decision)
+            await run(
+              "UPDATE orders SET refund_decision=? WHERE id=?",
+              decision,
+              o.id,
+            );
+          if (
+            ["cancelled", "refunded"].includes(to) &&
+            !bookingType(o) &&
+            ["legacy", "global"].includes(o.stock_mode)
+          )
             await run(
               "UPDATE resources SET stock=stock+? WHERE id=?",
               o.quantity,
@@ -854,9 +891,16 @@ export async function createApp({
           await notify(
             o.user_id,
             "订单状态更新",
-            `${o.code} · ${o.resource_name} → ${to}。${action === "pay" ? "这是模拟支付，未扣款。" : ""}`,
+            `${o.code} · ${o.resource_name} → ${to}。${action === "pay" ? "这是模拟支付，未扣款。" : ""}${decision ? "售后未通过：" + decision : ""}`,
+            1,
+            "system",
+            o.id,
           );
-          await audit(u, `订单操作 ${action}`, o.code);
+          await audit(
+            u,
+            `订单操作 ${action}`,
+            o.code + (decision ? "；原因：" + decision : ""),
+          );
         });
         send({
           ok: true,
@@ -949,12 +993,22 @@ export async function createApp({
       }
       if (p === "/api/moderate" && req.method === "POST") {
         const u = needAdmin();
-        assert(["demand", "comment"].includes(b.type), "审核类型错误");
+        assert(
+          ["demand", "comment", "message"].includes(b.type),
+          "审核类型错误",
+        );
         assert(["approved", "rejected"].includes(b.status), "审核状态错误");
-        const table = b.type === "demand" ? "demands" : "comments",
+        const table =
+            b.type === "demand"
+              ? "demands"
+              : b.type === "message"
+                ? "messages"
+                : "comments",
           id = int(b.id, "编号", 1),
           r = await get(`SELECT * FROM ${table} WHERE id=?`, id);
         assert(r, "内容不存在", 404);
+        if (b.type === "message")
+          assert(r.kind === "private", "仅审核合作私信");
         await run(`UPDATE ${table} SET status=? WHERE id=?`, b.status, id);
         if (b.reply && b.type === "comment")
           await run(
@@ -963,7 +1017,7 @@ export async function createApp({
             id,
           );
         await notify(
-          r.user_id,
+          b.type === "message" ? r.sender_id : r.user_id,
           "内容审核结果",
           `${b.type === "demand" ? r.title : r.content.slice(0, 30)}：${b.status === "approved" ? "审核通过" : "未通过审核"}`,
         );
@@ -1027,63 +1081,158 @@ export async function createApp({
           await get("SELECT id FROM users WHERE id=?", uid),
           "接收人不存在",
         );
-        await notify(
+        assert(uid !== u.id, "不能给自己发送私信");
+        const content = text(b.content, "消息", 1000),
+          title = text(b.title || "合作私信", "标题", 80);
+        const status = /诈骗|色情|辱骂/.test(title + content)
+          ? "pending"
+          : "approved";
+        await run(
+          "INSERT INTO messages(user_id,sender_id,title,content,created_at,kind,status) VALUES(?,?,?,?,?,?,?)",
           uid,
-          text(b.title || "合作私信", "标题", 80),
-          text(b.content, "消息", 1000),
           u.id,
+          title,
+          content,
+          time(),
+          "private",
+          status,
         );
         await audit(u, "发送站内私信", String(uid));
         send({
           ok: true,
+          message:
+            status === "pending"
+              ? "私信含待核实内容，已进入人工审核，尚未送达"
+              : "私信已发送",
         });
         return;
       }
       if (p === "/api/messages/read" && req.method === "POST") {
         const u = needUser();
-        await run("UPDATE messages SET is_read=1 WHERE user_id=?", u.id);
+        if (b.id !== undefined) {
+          const id = int(b.id, "消息编号", 1);
+          assert(
+            await get(
+              "SELECT id FROM messages WHERE id=? AND user_id=? AND status='approved'",
+              id,
+              u.id,
+            ),
+            "消息不存在或无权操作",
+            404,
+          );
+          await run(
+            "UPDATE messages SET is_read=1 WHERE id=? AND user_id=?",
+            id,
+            u.id,
+          );
+        } else
+          await run(
+            "UPDATE messages SET is_read=1 WHERE user_id=? AND status='approved'",
+            u.id,
+          );
         send({
           ok: true,
+        });
+        return;
+      }
+      if (p === "/api/recommendations") {
+        const u = needUser(),
+          id = Number(url.searchParams.get("userId") || u.id);
+        if (id !== u.id) needAdmin();
+        const target = await get("SELECT * FROM users WHERE id=?", id);
+        assert(target, "用户不存在", 404);
+        send({
+          recommendations: await recommendations(
+            target,
+            (await all("SELECT * FROM resources WHERE status='published'")).map(
+              resourceRow,
+            ),
+          ),
+        });
+        return;
+      }
+      if (p === "/api/profiles/snapshot" && req.method === "POST") {
+        const u = needAdmin(),
+          profiles = await profileRows();
+        for (const profile of profiles)
+          await run(
+            "INSERT INTO profile_snapshots(user_id,snapshot_date,data) VALUES(?,?,?) ON CONFLICT(user_id,snapshot_date) DO UPDATE SET data=excluded.data",
+            profile.id,
+            today,
+            JSON.stringify(profile),
+          );
+        await audit(u, "保存画像快照", today);
+        send({
+          ok: true,
+          message: "今日画像快照已保存；同日再次保存将更新当日快照",
+        });
+        return;
+      }
+      m = p.match(/^\/api\/profiles\/(\d+)\/history$/);
+      if (m) {
+        needAdmin();
+        send({
+          snapshots: (
+            await all(
+              "SELECT snapshot_date,data FROM profile_snapshots WHERE user_id=? ORDER BY snapshot_date DESC LIMIT 30",
+              Number(m[1]),
+            )
+          ).map((r) => ({
+            date: r.snapshot_date,
+            profile: JSON.parse(r.data),
+          })),
+        });
+        return;
+      }
+      if (p === "/api/segments/notify" && req.method === "POST") {
+        const u = needAdmin(),
+          segments = JSON.parse(
+            (await get("SELECT value FROM settings WHERE key=?", "segments"))
+              .value,
+          );
+        const segment = segments.find((s) => s.id === b.segmentId);
+        assert(segment, "请先保存分群");
+        const rows = (await profileRows()).filter(
+          (p) =>
+            (!segment.tag || p.tags.includes(segment.tag)) &&
+            (!segment.city || p.city === segment.city) &&
+            (!segment.channel || p.channel === segment.channel),
+        );
+        const content = text(b.content, "站内通知", 500);
+        assert(rows.length, "分群当前没有用户");
+        for (const p of rows)
+          await notify(p.id, "分群活动通知（模拟）", content);
+        await audit(u, "分群站内通知", `${segment.name}：${rows.length}人`);
+        send({
+          ok: true,
+          message: `已向${rows.length}名分群用户发送模拟站内通知，未发送外部短信`,
         });
         return;
       }
       if (p === "/api/ai" && req.method === "POST") {
         const u = needUser(),
           prompt = text(b.prompt, "问题", 1000);
-        let answer;
-        if (b.kind === "copy")
-          answer = `【本地模板生成示例】\n${prompt}\n\n活动标题：山歌有约，好戏广西\n推送文案：走进广西的舞台与山水，让民族歌舞点亮周末。打开桂演，查看同城演出、非遗体验与文旅套餐，选择适合你的文化之旅。\n渠道建议：小红书突出体验，公众号补充时间地点，短信保留预约入口。\n请在发布前核实场次、价格与授权。`;
+        assert(
+          ["copy", "operator", "support"].includes(b.kind || "support"),
+          "无效助手类型",
+        );
+        let result;
+        if (b.kind === "copy") result = copyAnswer(prompt);
         else if (b.kind === "operator") {
           needAdmin();
-          const a = await analysis();
-          answer = `【规则分析示例，未接入大模型】\n当前模拟交易总额：¥${(a.kpis.revenue / 100).toFixed(2)}；订单${a.kpis.orders}笔，上架资源${a.kpis.resources}项。\n${a.insights.join("\n")}\n${
-            /库存|异常|预警/.test(prompt)
-              ? a.alerts.map((x) => x.title).join("\n")
-              : a.ranking
-                  .slice(0, 3)
-                  .map((r, i) => `${i + 1}. ${r.name}：${r.sales}笔有效交易`)
-                  .join("\n")
-          }`;
-        } else if (/退款|退票|改签/.test(prompt))
-          answer =
-            "【规则客服示例】进入“我的订单”，待确认或待支付订单可取消；模拟支付后可申请退款，等待后台处理。改签请先联系资源方确认档期，再取消重订。";
-        else if (/会员|文惠|消费卡/.test(prompt))
-          answer =
-            "【规则客服示例】本Demo展示用户分群和权益说明；文惠卡、消费卡暂不实际扣款，相关数据通过后台“模拟数据同步”演示。";
-        else if (/订单/.test(prompt)) {
-          const os = await orderRows(u);
-          answer = `【规则客服示例】你当前有${os.length}笔订单。${os
-            .slice(0, 3)
-            .map((o) => `${o.code}：${o.resource_name}，${o.status}`)
-            .join("；")}。可在“我的订单”查看详情。`;
+          result = { answer: operatorAnswer(prompt, await analysis()) };
         } else
-          answer =
-            "【规则客服示例】你可以浏览资源、查看详情并预约。预约经后台确认后，可进行模拟支付。需要帮助时可询问订单、退票、改签或会员权益。本助手使用本地规则，没有连接外部AI接口。";
+          result = {
+            answer: supportAnswer(
+              prompt,
+              await orderRows({ id: u.id, role: "user" }),
+              (
+                await all("SELECT * FROM resources WHERE status='published'")
+              ).map(resourceRow),
+            ),
+          };
         await audit(u, `AI模拟 ${b.kind || "support"}`, prompt);
-        send({
-          answer,
-          mock: true,
-        });
+        send({ ...result, mock: true });
         return;
       }
       if (p === "/api/settings" && req.method === "PATCH") {
@@ -1094,6 +1243,92 @@ export async function createApp({
             JSON.stringify(int(b.alertThreshold, "预警阈值", 0, 1000)),
             "alertThreshold",
           );
+        if (b.tagRules !== undefined) {
+          assert(
+            Array.isArray(b.tagRules) && b.tagRules.length <= 20,
+            "最多配置20条标签规则",
+          );
+          const fields = [
+            "spent",
+            "paid_count",
+            "days_since_payment",
+            "view_count",
+            "favorite_count",
+            "preference",
+            "city",
+            "channel",
+            "view_category",
+          ];
+          const ids = new Set(),
+            names = new Set();
+          for (const r of b.tagRules) {
+            text(r.id, "规则编号", 60);
+            text(r.name, "标签名称", 20);
+            assert(
+              !ids.has(r.id) && !names.has(r.name),
+              "规则编号和标签名称不能重复",
+            );
+            ids.add(r.id);
+            names.add(r.name);
+            assert(
+              typeof r.enabled === "boolean" &&
+                ["all", "any"].includes(r.match) &&
+                Array.isArray(r.conditions) &&
+                r.conditions.length >= 1 &&
+                r.conditions.length <= 6,
+              "规则至少需要1个、最多6个条件",
+            );
+            for (const c of r.conditions) {
+              assert(
+                fields.includes(c.field) &&
+                  ["gte", "lte", "gt", "lt", "eq"].includes(c.op),
+                "不支持的规则条件",
+              );
+              if (
+                [
+                  "spent",
+                  "paid_count",
+                  "days_since_payment",
+                  "view_count",
+                  "favorite_count",
+                ].includes(c.field)
+              )
+                int(c.value, "阈值", 0);
+              else {
+                assert(c.op === "eq", "文本条件仅支持等于");
+                text(c.value, "匹配值", 40);
+              }
+            }
+          }
+          await run(
+            "UPDATE settings SET value=? WHERE key=?",
+            JSON.stringify(b.tagRules),
+            "tagRules",
+          );
+        }
+        if (b.segments !== undefined) {
+          assert(
+            Array.isArray(b.segments) && b.segments.length <= 30,
+            "最多保存30个分群",
+          );
+          const ids = new Set();
+          for (const s of b.segments) {
+            text(s.id, "分群编号", 60);
+            text(s.name, "分群名称", 40);
+            assert(!ids.has(s.id), "分群编号不能重复");
+            ids.add(s.id);
+            for (const key of ["tag", "city", "channel"])
+              assert(
+                typeof s[key] === "string" && s[key].length <= 40,
+                "分群条件格式错误",
+              );
+          }
+          await run(
+            "UPDATE settings SET value=? WHERE key=?",
+            JSON.stringify(b.segments),
+            "segments",
+          );
+        }
         await audit(u, "更新设置", "库存预警阈值");
         send({
           ok: true,
@@ -1102,12 +1337,20 @@ export async function createApp({
       }
       if (p === "/api/availability") {
         const id = Number(url.searchParams.get("resourceId"));
+        const resource = await get("SELECT * FROM resources WHERE id=?", id);
         assert(
-          await get("SELECT id FROM resources WHERE id=?", id),
+          resource && (resource.status === "published" || isAdmin(session)),
           "资源不存在",
           404,
         );
         send({
+          mode: inventoryMode(resource),
+          date: url.searchParams.get("date") || today,
+          available: await available(
+            resource,
+            date(url.searchParams.get("date") || today),
+          ),
+          capacity: resource.daily_capacity ?? resource.stock,
           dates: await all(
             "SELECT booking_date,status FROM orders WHERE resource_id=? AND status NOT IN ('cancelled','refunded')",
             id,

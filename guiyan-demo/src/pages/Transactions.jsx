@@ -25,7 +25,10 @@ export function OrderActions({ order: o, onContract }) {
   const mutate = (act) =>
     action(
       "/orders/" + o.id,
-      { action: act, reason: reason || "用户提交售后申请" },
+      {
+        action: act,
+        reason: reason || (act.startsWith("reject") ? "" : "用户提交售后申请"),
+      },
       act === "pay" ? "模拟支付成功，未扣款" : "订单已更新",
       "PATCH",
     );
@@ -94,13 +97,26 @@ export function OrderActions({ order: o, onContract }) {
           </>
         ) : null}
         {admin && ["refund_requested", "disputed"].includes(o.status) ? (
-          <button
-            className="button small"
-            disabled={busy}
-            onClick={() => mutate("approveRefund")}
-          >
-            同意退款
-          </button>
+          <>
+            <button
+              className="button small"
+              disabled={busy}
+              onClick={() => mutate("approveRefund")}
+            >
+              同意退款
+            </button>
+            <button
+              className="button small"
+              disabled={busy || !reason.trim()}
+              onClick={() =>
+                mutate(
+                  o.status === "disputed" ? "rejectDispute" : "rejectRefund",
+                )
+              }
+            >
+              {o.status === "disputed" ? "驳回申诉" : "拒绝退款"}
+            </button>
+          </>
         ) : null}
         {admin && o.status === "disputed" ? (
           <button
@@ -116,11 +132,16 @@ export function OrderActions({ order: o, onContract }) {
           协议 / 权益
         </button>
       </div>
-      {o.status === "paid" ? (
+      {o.status === "paid" ||
+      (admin && ["refund_requested", "disputed"].includes(o.status)) ? (
         <input
           className="reason-input"
-          aria-label="退款或申诉原因"
-          placeholder="退款或申诉原因（可选）"
+          aria-label={o.status === "paid" ? "退款或申诉原因" : "售后处理原因"}
+          placeholder={
+            o.status === "paid"
+              ? "退款或申诉原因（可选）"
+              : "拒绝退款 / 驳回申诉时必须填写原因"
+          }
           value={reason}
           onChange={(e) => setReason(e.target.value)}
         />
@@ -226,6 +247,9 @@ export function Transactions({ mobile = false }) {
             </div>
             {o.refund_reason ? (
               <p className="note">售后原因：{o.refund_reason}</p>
+            ) : null}
+            {o.refund_decision ? (
+              <p className="note">平台处理说明：{o.refund_decision}</p>
             ) : null}
             <OrderActions order={o} onContract={showContract} />
           </article>

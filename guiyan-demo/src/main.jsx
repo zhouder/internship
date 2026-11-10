@@ -4,6 +4,7 @@ import { Provider } from "./state";
 import App from "./App";
 import "./styles.css";
 import "./marketplace.css";
+import "./review.css";
 // Keep old bookmarks working without maintaining another product surface.
 if (location.pathname.startsWith("/mini"))
   history.replaceState(null, "", "/h5");

@@ -14,6 +14,7 @@ import { Demands } from "./pages/Demands";
 import { Transactions } from "./pages/Transactions";
 import { AI } from "./pages/AI";
 import { money } from "./api";
+import { matchesSearch, rankRecommendations } from "./search";
 
 export { Hero, Categories, Stories } from "./MarketComponents";
 import { Hero, Categories, Stories, shortCategories } from "./MarketComponents";
@@ -93,10 +94,7 @@ export function Desktop({ onOpen }) {
     (resource) =>
       (!category || resource.category === category) &&
       (!city || resource.city === city) &&
-      (!query ||
-        (resource.name + resource.description + resource.tags.join(""))
-          .toLowerCase()
-          .includes(query.toLowerCase())),
+      matchesSearch(resource, query),
   );
   const resources =
     sort === "price"
@@ -104,11 +102,7 @@ export function Desktop({ onOpen }) {
       : sort === "rating"
         ? [...matching].sort((a, b) => b.rating - a.rating)
         : data.user
-          ? [...matching].sort(
-              (a, b) =>
-                Number(b.category === data.user.preference) -
-                Number(a.category === data.user.preference),
-            )
+          ? rankRecommendations(matching, data.recommendations)
           : matching;
   const selectedNames = [
     "广西文化艺术中心",
@@ -120,15 +114,17 @@ export function Desktop({ onOpen }) {
     ? data.resources
         .filter((resource) => resource.category === featured)
         .slice(0, 4)
-    : selectedNames
-        .map((name) =>
-          data.resources.find((resource) => resource.name === name),
-        )
-        .filter(Boolean);
+    : data.user
+      ? rankRecommendations(matching, data.recommendations).slice(0, 4)
+      : selectedNames
+          .map((name) =>
+            data.resources.find((resource) => resource.name === name),
+          )
+          .filter(Boolean);
   const moreBase = ["artist", "creative", "digital", "tourism"].flatMap((id) =>
     data.resources.filter((resource) => resource.category === id).slice(-2),
   );
-  const more = data.user
+  const moreCandidates = data.user
     ? [
         ...data.resources
           .filter((resource) => resource.category === data.user.preference)
@@ -138,6 +134,11 @@ export function Desktop({ onOpen }) {
         ),
       ].slice(0, 8)
     : moreBase;
+  const more = moreCandidates.filter(
+    (r, i, rows) =>
+      !selected.some((s) => s.id === r.id) &&
+      rows.findIndex((s) => s.id === r.id) === i,
+  );
   const card = (resource) => (
     <ResourceCard
       key={resource.id}

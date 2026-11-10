@@ -242,6 +242,16 @@ export function ResourceCard({
             <span key={t}>{t}</span>
           ))}
         </div>
+        {r.recommendationReason ? (
+          <p className="recommendation-reason">{r.recommendationReason}</p>
+        ) : null}
+        {r.category === "service" ? (
+          <small className="resource-hint">可预约 · 服务需求待确认</small>
+        ) : r.low_stock ? (
+          <small className="stock-warning">
+            {r.stock === 0 ? "暂时无库存" : "库存紧张 · 剩余" + r.stock}
+          </small>
+        ) : null}
         {!compact ? (
           <div className="resource-bottom">
             <strong>

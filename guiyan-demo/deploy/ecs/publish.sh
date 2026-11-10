@@ -15,6 +15,8 @@ runuser -u guiyan -- npm ci --registry=https://registry.npmjs.org --no-audit --n
 runuser -u guiyan -- npm run check:images
 runuser -u guiyan -- npm run build
 runuser -u guiyan -- npm run check:mini
+# Verify the PostgreSQL path in an isolated schema before switching live code.
+/usr/local/bin/node --env-file=/etc/guiyan/demo.env scripts/test-postgres.mjs
 chown -R root:root "$release_dir"
 chmod -R u=rwX,go=rX "$release_dir"
 

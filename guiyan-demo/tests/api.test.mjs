@@ -59,6 +59,31 @@ after(async () => {
     await cleanupPool.end();
   }
 });
+async function reviewResource(category, stock = 2, meta = {}) {
+  const r = await request("/resources", {
+    token: admin,
+    method: "POST",
+    body: {
+      name: "验收-" + category + "-" + Date.now(),
+      category,
+      city: "南宁",
+      price: 18000,
+      unit: category === "show" ? "张" : "项",
+      description: "歌舞音乐适配资源，用于隔离回归",
+      capacity: 100,
+      stock,
+      meta,
+      tags: ["歌舞"],
+    },
+  });
+  assert.equal(r.status, 200);
+  return r.data.id;
+}
+async function availability(id, date) {
+  const r = await request(`/availability?resourceId=${id}&date=${date}`);
+  assert.equal(r.status, 200);
+  return r.data.available;
+}
 test("公开浏览提供资源但不泄露私有订单或密码", async () => {
   const r = await request("/bootstrap");
   assert.equal(r.status, 200);
@@ -472,7 +497,7 @@ test("AI输出明确模拟，普通用户不能调用运营问数", async () => 
         body: { kind: "support", prompt: "怎么退款" },
       })
     ).data.answer,
-    /规则客服示例/,
+    /本地规则客服/,
   );
   assert.match(
     (
@@ -482,7 +507,7 @@ test("AI输出明确模拟，普通用户不能调用运营问数", async () => 
         body: { kind: "copy", prompt: "山歌演出" },
       })
     ).data.answer,
-    /本地模板/,
+    /本地多渠道模板/,
   );
   assert.equal(
     (
@@ -648,6 +673,433 @@ test("API拒绝JSON数组或null作为请求对象", async () => {
   }
 });
 
+test("按日库存隔离、并发不超卖、售后拒绝和释放库存闭环", async () => {
+  const id = await reviewResource("show", 2),
+    d = "2027-04-01",
+    other = "2027-04-02";
+  assert.equal(await availability(id, d), 2);
+  const bookings = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      request("/orders", {
+        token: user,
+        method: "POST",
+        body: { resourceId: id, date: d, quantity: 1 },
+      }),
+    ),
+  );
+  assert.equal(bookings.filter((r) => r.status === 200).length, 2);
+  assert.equal(bookings.filter((r) => r.status === 409).length, 2);
+  assert.equal(await availability(id, d), 0);
+  assert.equal(await availability(id, other), 2);
+  const orderId = bookings.find((r) => r.status === 200).data.id,
+    route = "/orders/" + orderId;
+  await request(route, {
+    token: admin,
+    method: "PATCH",
+    body: { action: "confirm" },
+  });
+  await request(route, {
+    token: user,
+    method: "PATCH",
+    body: { action: "pay" },
+  });
+  await request(route, {
+    token: user,
+    method: "PATCH",
+    body: { action: "refund", reason: "行程变化" },
+  });
+  assert.equal(
+    (
+      await request(route, {
+        token: user,
+        method: "PATCH",
+        body: { action: "rejectRefund", reason: "越权" },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(route, {
+        token: admin,
+        method: "PATCH",
+        body: { action: "rejectRefund" },
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await request(route, {
+        token: admin,
+        method: "PATCH",
+        body: { action: "rejectRefund", reason: "请补充说明" },
+      })
+    ).status,
+    200,
+  );
+  assert.equal(await availability(id, d), 0);
+  const o = (await request("/bootstrap", { token: user })).data.orders.find(
+    (o) => o.id === orderId,
+  );
+  assert.ok(o.paid_at);
+  assert.equal(o.refund_decision, "请补充说明");
+  assert.equal(o.status, "paid");
+  await request(route, {
+    token: user,
+    method: "PATCH",
+    body: { action: "dispute", reason: "申请复核" },
+  });
+  assert.equal(
+    (
+      await request(route, {
+        token: admin,
+        method: "PATCH",
+        body: { action: "rejectDispute", reason: "已核实可正常使用" },
+      })
+    ).status,
+    200,
+  );
+  await request(route, {
+    token: user,
+    method: "PATCH",
+    body: { action: "refund", reason: "再次申请" },
+  });
+  await request(route, {
+    token: admin,
+    method: "PATCH",
+    body: { action: "approveRefund" },
+  });
+  assert.equal(await availability(id, d), 1);
+  assert.equal(await availability(id, other), 2);
+  const refunded = (
+    await request("/bootstrap", { token: user })
+  ).data.orders.find((o) => o.id === orderId);
+  assert.ok(refunded.refunded_at);
+  assert.equal(refunded.time_estimated, 0);
+});
+test("服务类不扣商品库存，新增配额按管理员配置生效", async () => {
+  const service = await reviewResource("service", 0);
+  assert.equal(await availability(service, "2027-04-01"), null);
+  assert.equal(
+    (
+      await request("/orders", {
+        token: user,
+        method: "POST",
+        body: { resourceId: service, date: "2027-04-01", quantity: 2 },
+      })
+    ).status,
+    200,
+  );
+});
+test("趋势补零、周区间、支付口径与导出时间列明确", async () => {
+  const a = (await request("/analytics", { token: admin })).data;
+  assert.ok(a.series.some((s) => s.amount === 0));
+  for (let i = 1; i < a.series.length; i++)
+    assert.equal(
+      (new Date(a.series[i].date) - new Date(a.series[i - 1].date)) / 86400000,
+      1,
+    );
+  assert.equal(
+    a.series.reduce((n, s) => n + s.amount, 0),
+    a.kpis.revenue,
+  );
+  const w = (await request("/analytics?period=week", { token: admin })).data;
+  assert.ok(w.series.every((s) => s.label.includes("～")));
+  const csv = (await request("/export", { token: admin })).data;
+  for (const label of [
+    "演出/使用日期",
+    "下单时间",
+    "支付时间",
+    "退款时间",
+    "历史时间说明",
+  ])
+    assert.ok(csv.includes(label));
+  assert.equal(
+    (await request("/analytics?period=invalid", { token: admin })).status,
+    400,
+  );
+});
+test("零付费用户不误标潜力，规则可配置且快照权限隔离", async () => {
+  const before = (await request("/bootstrap", { token: admin })).data;
+  assert.ok(
+    before.profiles
+      .filter((p) => p.spent === 0)
+      .every((p) => !p.tags.includes("潜力会员")),
+  );
+  const rules = before.settings.tagRules,
+    newRule = {
+      id: "test-no-pay",
+      name: "未付费验收分群",
+      enabled: true,
+      match: "all",
+      conditions: [{ field: "paid_count", op: "eq", value: 0 }],
+    };
+  assert.equal(
+    (
+      await request("/settings", {
+        token: user,
+        method: "PATCH",
+        body: { tagRules: [newRule] },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request("/settings", {
+        token: admin,
+        method: "PATCH",
+        body: { tagRules: [...rules, newRule] },
+      })
+    ).status,
+    200,
+  );
+  let a = (await request("/bootstrap", { token: admin })).data;
+  assert.ok(a.profiles.some((p) => p.tags.includes(newRule.name)));
+  assert.equal(
+    (
+      await request("/profiles/snapshot", {
+        token: admin,
+        method: "POST",
+        body: {},
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await request("/profiles/2/history", { token: user })).status,
+    403,
+  );
+  assert.equal(
+    (await request("/profiles/2/history", { token: admin })).data.snapshots
+      .length,
+    1,
+  );
+  await request("/profiles/snapshot", {
+    token: admin,
+    method: "POST",
+    body: {},
+  });
+  assert.equal(
+    (await request("/profiles/2/history", { token: admin })).data.snapshots
+      .length,
+    1,
+  );
+  newRule.enabled = false;
+  await request("/settings", {
+    token: admin,
+    method: "PATCH",
+    body: { tagRules: [...rules, newRule] },
+  });
+  a = (await request("/bootstrap", { token: admin })).data;
+  assert.ok(a.profiles.every((p) => !p.tags.includes(newRule.name)));
+  await request("/settings", {
+    token: admin,
+    method: "PATCH",
+    body: { tagRules: rules },
+  });
+});
+test("分群保存后实时圈选，站内通知不越权且可导出同源名单", async () => {
+  const segments = [
+    {
+      id: "review-group",
+      name: "南宁用户",
+      tag: "",
+      city: "南宁",
+      channel: "",
+    },
+  ];
+  await request("/settings", {
+    token: admin,
+    method: "PATCH",
+    body: { segments },
+  });
+  const a = (await request("/bootstrap", { token: admin })).data;
+  assert.equal(a.settings.segments[0].name, "南宁用户");
+  assert.equal(
+    (
+      await request("/segments/notify", {
+        token: user,
+        method: "POST",
+        body: { segmentId: "review-group", content: "越权" },
+      })
+    ).status,
+    403,
+  );
+  const r = await request("/segments/notify", {
+    token: admin,
+    method: "POST",
+    body: { segmentId: "review-group", content: "隔离测试活动" },
+  });
+  assert.equal(r.status, 200);
+  assert.match(
+    r.data.message,
+    new RegExp(a.profiles.filter((p) => p.city === "南宁").length + "名"),
+  );
+});
+test("私信审核、双向可见与单条已读均限制到本人", async () => {
+  const supplier = (
+    await request("/login", {
+      method: "POST",
+      body: { username: "supplier", password: "demo123" },
+    })
+  ).data.token;
+  const sender = (await request("/bootstrap", { token: user })).data.user;
+  await request("/messages", {
+    token: user,
+    method: "POST",
+    body: { to: 3, content: "请核实诈骗风险", title: "风险沟通" },
+  });
+  const own = (await request("/bootstrap", { token: user })).data.messages.find(
+    (m) => m.content === "请核实诈骗风险",
+  );
+  assert.equal(own.status, "pending");
+  assert.ok(
+    !(await request("/bootstrap", { token: supplier })).data.messages.some(
+      (m) => m.id === own.id,
+    ),
+  );
+  assert.equal(
+    (
+      await request("/moderate", {
+        token: user,
+        method: "POST",
+        body: { type: "message", id: own.id, status: "approved" },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request("/moderate", {
+        token: admin,
+        method: "POST",
+        body: { type: "message", id: own.id, status: "approved" },
+      })
+    ).status,
+    200,
+  );
+  const delivered = (
+    await request("/bootstrap", { token: supplier })
+  ).data.messages.find((m) => m.id === own.id);
+  assert.ok(delivered);
+  assert.equal(delivered.is_read, 0);
+  assert.equal(
+    (
+      await request("/messages/read", {
+        token: user,
+        method: "POST",
+        body: { id: own.id },
+      })
+    ).status,
+    404,
+  );
+  await request("/messages/read", {
+    token: supplier,
+    method: "POST",
+    body: { id: own.id },
+  });
+  assert.equal(
+    (await request("/bootstrap", { token: supplier })).data.messages.find(
+      (m) => m.id === own.id,
+    ).is_read,
+    1,
+  );
+  await request("/messages", {
+    token: supplier,
+    method: "POST",
+    body: { to: sender.id, content: "收到，我们继续沟通" },
+  });
+  assert.ok(
+    (await request("/bootstrap", { token: user })).data.messages.some(
+      (m) => m.content === "收到，我们继续沟通",
+    ),
+  );
+});
+test("推荐消费真实行为，助手按意图回答且文案按主题分渠道", async () => {
+  await request("/resources/10/view", {
+    token: user,
+    method: "POST",
+    body: {},
+  });
+  await request("/favorites", {
+    token: user,
+    method: "POST",
+    body: { resourceId: 10 },
+  });
+  const rec = (await request("/recommendations", { token: user })).data
+    .recommendations;
+  assert.ok(rec.find((r) => r.resourceId === 10).reason.includes("浏览"));
+  assert.equal(
+    (await request("/recommendations?userId=3", { token: user })).status,
+    403,
+  );
+  const operator = (
+    await request("/ai", {
+      token: admin,
+      method: "POST",
+      body: { kind: "operator", prompt: "最近用户增长和活跃怎么样" },
+    })
+  ).data.answer;
+  assert.match(operator, /新增|活跃/);
+  assert.ok(!operator.includes("热销TOP"));
+  const copy1 = (
+      await request("/ai", {
+        token: user,
+        method: "POST",
+        body: { kind: "copy", prompt: "给昆曲表演写一段公众号文案" },
+      })
+    ).data,
+    copy2 = (
+      await request("/ai", {
+        token: user,
+        method: "POST",
+        body: { kind: "copy", prompt: "给非遗亲子体验写一段小红书文案" },
+      })
+    ).data;
+  assert.match(copy1.sections.body, /昆曲/);
+  assert.match(copy2.sections.body, /孩子/);
+  assert.notEqual(copy1.sections.body, copy2.sections.body);
+  assert.equal(copy1.sections.channels.length, 3);
+  assert.ok(copy1.sections.channels[2].content.length <= 70);
+  const support = (
+    await request("/ai", {
+      token: admin,
+      method: "POST",
+      body: { kind: "support", prompt: "查询订单" },
+    })
+  ).data.answer;
+  assert.match(support, /共0笔/);
+});
+test("场馆档期与售票上座率分开，场均票房和匹配可核验", async () => {
+  const venue = await reviewResource("venue", 1),
+    show = await reviewResource("show", 2, { venueId: venue });
+  const booking = await request("/orders", {
+    token: user,
+    method: "POST",
+    body: { resourceId: show, date: "2027-04-03", quantity: 1 },
+  });
+  await request("/orders/" + booking.data.id, {
+    token: admin,
+    method: "PATCH",
+    body: { action: "confirm" },
+  });
+  await request("/orders/" + booking.data.id, {
+    token: user,
+    method: "PATCH",
+    body: { action: "pay" },
+  });
+  const a = (await request("/analytics", { token: admin })).data,
+    v = a.venues.find((v) => v.id === venue);
+  assert.equal(v.seatOccupancy, 50);
+  assert.equal(v.averageRevenue, 18000);
+  assert.equal(v.performances, 1);
+  assert.equal(v.occupancy, 0);
+  assert.equal(v.idleRate, 100);
+  assert.ok(v.recommendations.length);
+  assert.match(a.report, /模拟经营分析报告/);
+});
 test(
   "PostgreSQL重新建立应用连接后仍保留数据和会话",
   { skip: !process.env.TEST_DATABASE_URL },

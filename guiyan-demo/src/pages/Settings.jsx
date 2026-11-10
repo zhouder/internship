@@ -46,7 +46,12 @@ export function Settings() {
             <dt>密码保存</dt>
             <dd>随机盐与 scrypt 哈希</dd>
             <dt>业务数据</dt>
-            <dd>SQLite 本地持久化；不采集真实身份证或支付信息</dd>
+            <dd>
+              {data.database === "postgres"
+                ? "PostgreSQL 远程持久化"
+                : "SQLite 本地持久化"}
+              ；不采集真实身份证或支付信息
+            </dd>
             <dt>外部连接</dt>
             <dd>微信登录、支付、短信、渠道同步、版权确权、AI 均未真实接入</dd>
           </dl>

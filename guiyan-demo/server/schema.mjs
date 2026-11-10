@@ -13,4 +13,5 @@ CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, username TEXT UNIQUE NO
     CREATE INDEX IF NOT EXISTS idx_order_resource_date ON orders(resource_id,booking_date,status);
     CREATE INDEX IF NOT EXISTS idx_order_user ON orders(user_id);
     CREATE INDEX IF NOT EXISTS idx_comments_resource ON comments(resource_id,status);
+    CREATE TABLE IF NOT EXISTS profile_snapshots(user_id INTEGER REFERENCES users(id), snapshot_date TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY(user_id,snapshot_date));
 `;

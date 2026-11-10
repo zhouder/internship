@@ -6,15 +6,16 @@ export function Moderation() {
   const [tab, setTab] = useState("comment"),
     [filter, setFilter] = useState("pending"),
     [replies, setReplies] = useState({});
-  const rows = (tab === "comment" ? data.comments : data.demands).filter(
-    (r) => !filter || r.status === filter,
-  );
+  const rows = (
+    tab === "comment"
+      ? data.comments
+      : tab === "message"
+        ? data.moderatedMessages
+        : data.demands
+  ).filter((r) => !filter || r.status === filter);
   return (
     <>
-      <PageTitle
-        title="内容审核"
-        subtitle="审核公开评论与合作需求，维护资源交流秩序"
-      />
+      <PageTitle title="内容审核" subtitle="审核评论、合作需求与待核实私信" />
       <div className="filter-bar">
         <div className="category-tabs">
           <button
@@ -30,6 +31,12 @@ export function Moderation() {
             合作需求
           </button>
         </div>
+        <button
+          className={`button ${tab === "message" ? "selected" : ""}`}
+          onClick={() => setTab("message")}
+        >
+          合作私信
+        </button>
         <select
           aria-label="审核状态"
           value={filter}
@@ -52,6 +59,11 @@ export function Moderation() {
               {r.user_name}
               {tab === "comment" ? ` · ${r.rating}分` : ""}
             </p>
+            {tab === "message" ? (
+              <p className="muted">
+                {r.sender_name} → {r.user_name}
+              </p>
+            ) : null}
             <p>{r.content || r.description}</p>
             {tab === "comment" ? (
               <input

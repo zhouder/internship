@@ -5,6 +5,7 @@ import { schema } from "./schema.mjs";
 import { demoStatements } from "./demo-data.mjs";
 import { enrichCatalog } from "./catalog-content.mjs";
 import { enrichResourceArtwork } from "./resource-artwork.mjs";
+import { upgradeColumns, upgradeReview } from "./review-upgrade.mjs";
 
 // PostgreSQL aggregates return int8/numeric strings; the demo API uses numbers.
 pg.types.setTypeParser(20, Number);
@@ -55,6 +56,11 @@ export async function openPostgresStore(
       await client.query(
         "ALTER TABLE comments ADD COLUMN IF NOT EXISTS dimensions TEXT NOT NULL DEFAULT '{}'",
       );
+      for (const [table, columns] of Object.entries(upgradeColumns))
+        for (const [name, type] of Object.entries(columns))
+          await client.query(
+            `ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${name} ${type}`,
+          );
       if (!(await client.query("SELECT COUNT(*) AS n FROM users")).rows[0].n) {
         // Batch adjacent inserts to keep first-time setup fast over the network.
         const groups = [];
@@ -83,6 +89,7 @@ export async function openPostgresStore(
       };
       await enrichCatalog(catalogDb);
       await enrichResourceArtwork(catalogDb);
+      await upgradeReview(catalogDb);
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");

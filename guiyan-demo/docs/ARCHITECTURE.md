@@ -17,10 +17,10 @@ flowchart LR
 - 角色为普通用户、资源合作方和管理员。后台写资源、审核、查看全量订单和统计均需管理员。
 - 用户只能操作自己的订单。管理员能够审核和处理退款纠纷。
 - 场馆与设备资源按天独占，同一天存在未取消、未退款订单时拒绝重复预约。
-- 普通资源提交预约时扣减可用库存，取消或退款后释放库存。写请求使用数据库事务；线上通过事务级锁串行执行写操作，在读取状态前加锁，防止多实例并发造成超卖、档期冲突和重复恢复库存。
+- 演出、非遗、文旅、数字演出和艺人按日期独立配额，预约占用当天名额；文创和版权扣减总库存；服务类不扣商品库存。取消/退款成功按原订单库存模式释放，兼容历史记录。写请求使用数据库事务；线上通过事务级锁串行执行写操作，防止并发超卖和重复恢复。迁移口径见[指标与库存口径](METRICS.md)。
 - 金额用整数分保存，展示时转换为元。
 - 评论与需求审核通过后才公开；用户可以看到自己尚未公开的内容。
-- 标签来自订单数量和已支付金额，推荐优先展示用户选择的兴趣分类。
+- 标签按后台可配置规则计算，结合有效付费金额、有效付费次数、消费时间与行为；命名分群保存条件，画像快照按日手动保存。推荐结合兴趣、浏览、收藏、有效购买与同城信号，显示原因。
 
 ```mermaid
 stateDiagram-v2
@@ -33,7 +33,9 @@ stateDiagram-v2
   paid --> refund_requested: 申请退款
   paid --> disputed: 提交申诉
   refund_requested --> refunded: 管理员同意
+  refund_requested --> paid: 管理员拒绝并说明原因
   disputed --> refunded: 管理员退款
+  disputed --> paid: 管理员驳回申诉并说明原因
   disputed --> completed: 调解后完成
 ```
 
@@ -44,16 +46,17 @@ stateDiagram-v2
 | users | 账号、密码哈希、角色、基础属性、偏好、演示认证状态 |
 | sessions | 随机会话令牌、用户、有效期 |
 | resources | 10类资源、价格、库存、容量、标签、扩展元数据、上下架、浏览量 |
-| orders | 预约日期、数量、金额、渠道、订单状态、模拟托管、售后原因 |
+| orders | 预约日期、数量、金额、渠道、订单状态、模拟托管、售后申请与处理原因、支付/退款时间及估算标志、库存模式 |
 | demands | 合作需求、预算、分类、城市、审核状态 |
 | comments | 综合评分、质量/服务/价值分项JSON、评论、回复、审核状态 |
-| messages | 站内通知、私信、已读状态 |
+| messages | 站内通知、双向私信、审核与单条已读状态、关联订单 |
+| profile_snapshots | 每用户每天一份画像快照，保存当时消费指标、规则标签与建议 |
 | favorites | 用户与资源的收藏关联 |
 | events | 资源浏览等本地事件 |
 | audit_logs | 登录、资源变更、订单、同步与审核操作记录 |
 | settings | 库存阈值等演示配置 |
 
-实体和字段定义以 `server/schema.mjs` 的建表语句为准；`server/catalog-content.mjs`提供可重复安全执行的内容扩充。正式数据库设计文档可依据这些真实实现填写。
+实体定义以 `server/schema.mjs` 及 `server/review-upgrade.mjs` 中的增量字段为准；SQLite和PostgreSQL适配器均执行幂等升级。`server/catalog-content.mjs`提供可重复安全执行的内容扩充。正式数据库设计文档应同时记录基础结构和增量字段。
 
 ## 主要API
 
@@ -65,7 +68,7 @@ stateDiagram-v2
 | /api/resources/:id | PATCH | 管理员编辑、上下架 |
 | /api/resources/:id/view | POST | 浏览事件 |
 | /api/resources/:id/sync | POST | 模拟剧目三渠道发布 |
-| /api/availability | GET | 查询资源占用日期 |
+| /api/availability | GET | 查询占用日期、指定日期余量与库存模式 |
 | /api/orders | POST | 提交预约 |
 | /api/orders/:id | PATCH | 状态机操作 |
 | /api/orders/:id/contract | GET | 模拟服务或授权协议 |
@@ -80,6 +83,10 @@ stateDiagram-v2
 | /api/sync | POST | 模拟渠道订单汇聚 |
 | /api/ai | POST | 规则客服、运营分析、模板文案 |
 | /api/settings | PATCH | 管理员修改阈值 |
+| /api/recommendations | GET | 本人推荐或管理员按用户试算 |
+| /api/profiles/snapshot | POST | 管理员保存当日画像快照 |
+| /api/profiles/:id/history | GET | 管理员读取画像快照历史 |
+| /api/segments/notify | POST | 管理员按保存的分群条件发送模拟站内通知 |
 
 认证头为 `Authorization: Bearer <演示会话令牌>`。所有SQL使用参数化查询；表名只来自服务端固定白名单。
 

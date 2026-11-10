@@ -64,6 +64,8 @@ H5与电脑网站共用用户登录存储，后台独立保存管理员登录状
 
 详细模块对应关系见 [功能覆盖说明](docs/FEATURES.md)，架构、数据表和接口见 [技术说明](docs/ARCHITECTURE.md)。原文件夹的 Word、Excel 模板没有修改，正式文档和报价仍需结合老师的最终验收口径填写。
 
+组员台账反馈对应的指标、按日库存、标签规则、命名分群、快照和经营分析边界，见[指标与库存口径](docs/METRICS.md)。后台可在“用户画像”配置规则、保存分群和当日快照；“数据分析”支持下载经营报告。
+
 ## 项目结构
 
 ```text
@@ -85,6 +87,7 @@ guiyan-demo/
 
 ```powershell
 npm test
+npm run check:images
 npm run check:mini
 npm run build
 ```

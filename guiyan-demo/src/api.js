@@ -15,7 +15,12 @@ export const statusNames = {
 export const money = (value) =>
   `¥${(Number(value || 0) / 100).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 export const shortDate = (value) =>
-  value ? value.slice(0, 16).replace("T", " ") : "—";
+  value
+    ? new Date(new Date(value).getTime() + 8 * 3600000)
+        .toISOString()
+        .slice(0, 16)
+        .replace("T", " ")
+    : "—";
 export function tokenKey() {
   return location.pathname.startsWith("/admin")
     ? "guiyan.admin.v1"
