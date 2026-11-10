@@ -1,5 +1,10 @@
 # Vercel与Neon部署说明
 
+- H5：https://guiyan-demo.vercel.app/h5
+- 管理后台：https://guiyan-demo.vercel.app/admin
+- 小程序网页预览：https://guiyan-demo.vercel.app/mini
+- 健康与版本：https://guiyan-demo.vercel.app/api/health
+
 线上使用 Vercel Functions 与 Neon PostgreSQL，H5、管理后台和网页预览共用线上数据库。本地不设置 `DATABASE_URL` 时继续使用 SQLite，组员照旧运行 `npm ci`、`npm run dev`，不需要获取云数据库密码。
 
 ## 小组在线测试

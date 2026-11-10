@@ -6,6 +6,8 @@
 
 ## 组员从这里开始
 
+集中测试：[H5用户端](https://guiyan-demo.vercel.app/h5) · [管理后台](https://guiyan-demo.vercel.app/admin) · [小程序网页预览](https://guiyan-demo.vercel.app/mini)。每人使用自己的演示账号，线上记录共同保存。
+
 协作入口：[飞书文档与权限设置](guiyan-demo/docs/COLLABORATION_LINKS.md)。先登记分工、领取任务，再按对应模块修改代码和填写验收记录。
 
 1. 阅读 [GitHub零基础协作指南](guiyan-demo/docs/GITHUB_GUIDE.md)。

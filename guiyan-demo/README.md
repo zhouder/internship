@@ -8,7 +8,7 @@
 
 ## 快速启动
 
-需要 Node.js 22.13 或更高版本。开发和演示已在 Windows、Node.js 22.17 验证。SQLite 使用 Node 内置模块，启动时可能出现 ExperimentalWarning，不影响本 Demo 运行。
+需要 Node.js 22.x，最低22.13。开发和演示已在 Windows、Node.js 22.17 验证；Vercel也固定使用22.x。SQLite 使用 Node 内置模块，启动时可能出现 ExperimentalWarning，不影响本 Demo 运行。
 
 在本目录打开终端：
 
