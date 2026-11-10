@@ -12,7 +12,7 @@
 |---|---|
 | [00 项目总览与八人分工](https://ecn4tjqm845h.feishu.cn/docx/B8RAdf5BGoR2Ttxj6F1cWEY3nod) | 登记姓名、GitHub账号与模块责任，统一交付范围 |
 | [01 功能模块与验收范围](https://ecn4tjqm845h.feishu.cn/docx/HDq2dSN9soW2UZxxHnXcwJ5bnuf) | 对照29项需求，逐项核对实现和模拟范围 |
-| [02 概要设计协作初稿](https://ecn4tjqm845h.feishu.cn/docx/Ab6ndmhlgo3DShxHnkDcz1mWnRb) | 各模块补充流程，由统筹人汇总审核 |
+| [02 概要设计文档](https://ecn4tjqm845h.feishu.cn/docx/Ab6ndmhlgo3DShxHnkDcz1mWnRb) | 按老师示例的7章结构填写，汇总审核后导出为正式概要设计说明书 |
 | [03 数据库详细设计协作初稿](https://ecn4tjqm845h.feishu.cn/docx/QeD7dcGzcobJu6xVgkDcKQt8nNf) | 已根据当前11张表整理字段，继续补充业务含义和设计依据 |
 | [04 GitHub零基础协作指南](https://ecn4tjqm845h.feishu.cn/docx/Oue1d9bTXoVwSNxw8cScFVKanNc) | 克隆、更新、分支、提交、推送、PR和冲突处理 |
 | [05 任务与测试验收台账](https://ecn4tjqm845h.feishu.cn/docx/Kjr0d5b2Tom9Y3xRis3cAR82nfc) | 领取任务、登记问题、关联PR、填写复测证据 |
