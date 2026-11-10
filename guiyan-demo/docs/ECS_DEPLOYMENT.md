@@ -13,7 +13,7 @@
 
 账号：`visitor1`至`visitor8`，密码`demo123`；管理员`admin / admin123`；供应商`supplier / demo123`。支付、认证、AI和外部渠道仍为模拟业务。
 
-`/mini`是网页预览，原生微信小程序没有因此自动上线。开发者工具联调时可将`miniprogram/app.js`中的`baseUrl`设为服务器根地址，并使用开发工具允许的本地调试设置；真机与正式发布需按微信规则使用合法HTTPS域名。
+`/mini`是网页预览，原生微信小程序没有因此自动上线。`miniprogram/app.js`中的`baseUrl`已指向阿里云共享测试API；在微信开发者工具导入`miniprogram`目录即可进行开发联调，当前项目配置`urlCheck: false`仅适用于开发调试。若需本地后端联调，将`baseUrl`改回`http://127.0.0.1:3001`。真机与正式发布需按微信规则使用合法HTTPS域名。
 
 ## 目录与服务
 
