@@ -15,7 +15,8 @@
     "start": "node --experimental-sqlite server/index.mjs",
     "test": "node --experimental-sqlite --test tests/*.test.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",
-    "check:mini": "node scripts/check-mini.mjs"
+    "check:mini": "node scripts/check-mini.mjs",
+    "check:images": "node scripts/check-images.mjs"
   },
   "dependencies": {
     "@vercel/functions": "^3.11.1",

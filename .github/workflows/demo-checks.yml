@@ -23,4 +23,5 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run check:mini
+      - run: npm run check:images
       - run: npm run build

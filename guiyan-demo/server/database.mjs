@@ -1,4 +1,5 @@
 import { enrichCatalog } from "./catalog-content.mjs";
+import { enrichResourceArtwork } from "./resource-artwork.mjs";
 // Keep SQL dialect differences and request transactions outside business routes.
 export async function openSqliteStore(filename) {
   const { openDatabase } = await import("./db.mjs");
@@ -6,6 +7,7 @@ export async function openSqliteStore(filename) {
   db.exec("BEGIN IMMEDIATE");
   try {
     await enrichCatalog(db);
+    await enrichResourceArtwork(db);
     db.exec("COMMIT");
   } catch (error) {
     db.exec("ROLLBACK");

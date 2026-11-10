@@ -49,6 +49,7 @@ const responsiveArtwork = new Set(
     "stage-equipment",
     "river-evening",
     "digital-landscape",
+    "venue",
   ].map((name) => `/images/${name}.webp`),
 );
 export function Icon({ name, ...props }) {
@@ -204,7 +205,8 @@ export function ResourceCard({
         <img
           src={r.image}
           srcSet={
-            responsiveArtwork.has(r.image)
+            responsiveArtwork.has(r.image) ||
+            /^\/images\/catalog\/r\d{3}\.webp$/.test(r.image)
               ? `${r.image.replace(/\.webp$/, "-card.webp")} 640w, ${r.image} 1536w`
               : undefined
           }

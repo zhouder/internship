@@ -1,0 +1,1068 @@
+{
+  "date": "2026-11-10",
+  "resources": [
+    {
+      "ordinal": 1,
+      "name": "广西文化艺术中心",
+      "category": "venue",
+      "description": "现代化多功能剧场，配备专业灯光音响、后台化妆间与观众服务空间，适合歌舞演出、发布会和艺术交流。",
+      "image": "/images/venue-evening.webp"
+    },
+    {
+      "ordinal": 2,
+      "name": "民族歌舞剧《刘三姐》",
+      "category": "show",
+      "description": "以广西山歌与壮族文化为灵感的舞台演出示例，适合家庭观演、团体活动及文旅合作。",
+      "image": "/images/folk-performer.webp"
+    },
+    {
+      "ordinal": 3,
+      "name": "壮乡情·民族歌舞专场",
+      "category": "show",
+      "description": "融合壮族铜鼓、山歌对唱与群舞表演，提供剧目采购与巡演合作方案。",
+      "image": "/images/catalog/r003.webp"
+    },
+    {
+      "ordinal": 4,
+      "name": "南宁小剧场",
+      "category": "venue",
+      "description": "灵活的黑匣子空间，适合话剧、脱口秀、沙龙与小型音乐会。",
+      "image": "/images/catalog/r004.webp"
+    },
+    {
+      "ordinal": 5,
+      "name": "青年山歌演唱组合",
+      "category": "artist",
+      "description": "四人演唱组合，擅长山歌对唱、民族音乐改编；可提供主持及定制节目。",
+      "image": "/images/catalog/r005.webp"
+    },
+    {
+      "ordinal": 6,
+      "name": "专业舞台灯光组合",
+      "category": "equipment",
+      "description": "含摇头灯、染色灯与控台的灯光租赁方案，可调整灯位与色彩查看舞台布置模拟。",
+      "image": "/images/catalog/r006.webp"
+    },
+    {
+      "ordinal": 7,
+      "name": "移动音响与无线话筒套装",
+      "category": "equipment",
+      "description": "适合小型户外演出和活动，包含音响、调音台、无线话筒及安装服务。",
+      "image": "/images/catalog/r007.webp"
+    },
+    {
+      "ordinal": 8,
+      "name": "刘三姐主题IP授权",
+      "category": "copyright",
+      "description": "原创演艺视觉示例的商业使用授权流程演示，明确地域、期限和使用范围。",
+      "image": "/images/catalog/r008.webp"
+    },
+    {
+      "ordinal": 9,
+      "name": "花山岩画主题舞美设计",
+      "category": "copyright",
+      "description": "以地方文化为灵感的舞美设计资源，支持授权申请、合同查看与权益交付演示。",
+      "image": "/images/catalog/r009.webp"
+    },
+    {
+      "ordinal": 10,
+      "name": "壮锦手作与山歌体验",
+      "category": "heritage",
+      "description": "体验壮锦纹样创作与山歌互动，适合亲子、研学和团队文化活动。",
+      "image": "/images/catalog/r010.webp"
+    },
+    {
+      "ordinal": 11,
+      "name": "咸水歌文化体验",
+      "category": "heritage",
+      "description": "聆听地方歌谣，参与互动演唱，了解沿海地区民俗文化。",
+      "image": "/images/catalog/r011.webp"
+    },
+    {
+      "ordinal": 12,
+      "name": "壮锦纹样帆布袋",
+      "category": "creative",
+      "description": "采用广西传统纹样灵感的文创示例，可查看规格、库存与模拟物流。",
+      "image": "/images/catalog/r012.webp"
+    },
+    {
+      "ordinal": 13,
+      "name": "AIGC山歌纪念海报定制",
+      "category": "creative",
+      "description": "选择姓名和祝福主题生成文字排版海报方案；内容为本地模板组合，不调用生成模型。",
+      "image": "/images/catalog/r013.webp"
+    },
+    {
+      "ordinal": 14,
+      "name": "云演播·壮乡舞台精选",
+      "category": "digital",
+      "description": "数字剧目的点播权益演示，模拟播放进度与权益领取，不提供真实版权视频。",
+      "image": "/images/catalog/r014.webp"
+    },
+    {
+      "ordinal": 15,
+      "name": "VR山歌剧场体验",
+      "category": "digital",
+      "description": "交互式舞台视角预览与预约权益演示，不包含真实VR影片。",
+      "image": "/images/catalog/r015.webp"
+    },
+    {
+      "ordinal": 16,
+      "name": "演艺＋漓江文旅套餐",
+      "category": "tourism",
+      "description": "包含示例演出观演与景区体验的组合套餐，支持定制需求和模拟下单。",
+      "image": "/images/catalog/r016.webp"
+    },
+    {
+      "ordinal": 17,
+      "name": "滨海音乐会与酒店套餐",
+      "category": "tourism",
+      "description": "观演与住宿的组合产品示例，适合周末短途出游。",
+      "image": "/images/catalog/r017.webp"
+    },
+    {
+      "ordinal": 18,
+      "name": "演出报批咨询对接",
+      "category": "service",
+      "description": "收集演出类型、场次和主体资料，演示服务机构咨询与材料提交流程。",
+      "image": "/images/catalog/r018.webp"
+    },
+    {
+      "ordinal": 19,
+      "name": "东盟演艺合作咨询",
+      "category": "service",
+      "description": "演示跨境演艺合作需求登记、资源匹配与服务机构对接。",
+      "image": "/images/catalog/r019.webp"
+    },
+    {
+      "ordinal": 20,
+      "name": "文旅活动保险咨询",
+      "category": "service",
+      "description": "演示活动保险需求提交与机构对接，不提供真实承保或保险交易。",
+      "image": "/images/catalog/r020.webp"
+    },
+    {
+      "ordinal": 21,
+      "name": "演艺市场趋势报告",
+      "category": "service",
+      "description": "基于本平台模拟交易数据整理的演艺市场分析报告示例。",
+      "image": "/images/catalog/r021.webp"
+    },
+    {
+      "ordinal": 22,
+      "name": "舞台技术人才与课程",
+      "category": "service",
+      "description": "演示行业人才展示、招聘意向与灯光基础课程预约，不提供实际资质认证。",
+      "image": "/images/catalog/r022.webp"
+    },
+    {
+      "ordinal": 23,
+      "name": "八桂弦歌·民族室内乐专场",
+      "category": "show",
+      "description": "以琵琶、古筝和笛箫演绎广西山歌，在轻松的室内乐现场听见八桂风物。",
+      "image": "/images/ensemble.webp"
+    },
+    {
+      "ordinal": 24,
+      "name": "山水之间·桂林民谣音乐会",
+      "category": "show",
+      "description": "山水意象与原创民谣相遇，适合朋友结伴、周末观演和小型团体包场。",
+      "image": "/images/catalog/r024.webp"
+    },
+    {
+      "ordinal": 25,
+      "name": "邕城故事·城市小剧场",
+      "category": "show",
+      "description": "从老街、骑楼和日常生活出发，以轻喜剧呈现城市里的温暖相遇。",
+      "image": "/images/catalog/r025.webp"
+    },
+    {
+      "ordinal": 26,
+      "name": "铜鼓回响·壮乡舞蹈诗",
+      "category": "show",
+      "description": "融合铜鼓节奏与民族舞蹈的舞台作品，提供个人观演及团体合作咨询。",
+      "image": "/images/catalog/r026.webp"
+    },
+    {
+      "ordinal": 27,
+      "name": "邕江艺术空间·黑匣子剧场",
+      "category": "venue",
+      "description": "可灵活组合的舞台与观众席，适合实验戏剧、专场演出和品牌分享会。",
+      "image": "/images/catalog/r027.webp"
+    },
+    {
+      "ordinal": 28,
+      "name": "漓江畔·山水露天舞台",
+      "category": "venue",
+      "description": "依山临水的开放式演艺空间，可对接小型实景演出与城市文化活动。",
+      "image": "/images/catalog/r028.webp"
+    },
+    {
+      "ordinal": 29,
+      "name": "柳江青年艺术剧场",
+      "category": "venue",
+      "description": "配备基础灯光、扩声和后台空间，面向青年剧团巡演及城市文化交流。",
+      "image": "/images/venue.webp"
+    },
+    {
+      "ordinal": 30,
+      "name": "海风文化客厅·多功能厅",
+      "category": "venue",
+      "description": "适用于小型音乐会、艺术沙龙和文创发布，可按活动需要调整布置。",
+      "image": "/images/catalog/r030.webp"
+    },
+    {
+      "ordinal": 31,
+      "name": "八桂丝竹·民族器乐组合",
+      "category": "artist",
+      "description": "民族器乐四人组合，提供室内乐、文化交流与主题活动的定制曲目方案。",
+      "image": "/images/catalog/r031.webp"
+    },
+    {
+      "ordinal": 32,
+      "name": "柳江青年·民谣乐队",
+      "category": "artist",
+      "description": "原声吉他与人声的轻量编制，适合市集、露营活动和文旅空间驻演。",
+      "image": "/images/catalog/r032.webp"
+    },
+    {
+      "ordinal": 33,
+      "name": "山歌有约·壮乡歌舞团",
+      "category": "artist",
+      "description": "以壮族山歌和传统舞蹈为特色，支持节目组合、团体演出和文化体验。",
+      "image": "/images/catalog/r033.webp"
+    },
+    {
+      "ordinal": 34,
+      "name": "桂北声场·青年合唱团",
+      "category": "artist",
+      "description": "适合艺术节、校园交流及公共文化活动，可根据主题编排演唱内容。",
+      "image": "/images/catalog/r034.webp"
+    },
+    {
+      "ordinal": 35,
+      "name": "小型演出·专业扩声套装",
+      "category": "equipment",
+      "description": "含主扩声、返听、调音台与基础布线，适配小剧场和中小型活动。",
+      "image": "/images/stage-equipment.webp"
+    },
+    {
+      "ordinal": 36,
+      "name": "舞台氛围·LED灯光套装",
+      "category": "equipment",
+      "description": "提供染色灯、面光及控制台，支持基础灯位建议和现场技术对接。",
+      "image": "/images/catalog/r036.webp"
+    },
+    {
+      "ordinal": 37,
+      "name": "户外活动·移动舞台搭建",
+      "category": "equipment",
+      "description": "模块化舞台与基础围护方案，按实际场地和活动规模沟通搭建需求。",
+      "image": "/images/catalog/r037.webp"
+    },
+    {
+      "ordinal": 38,
+      "name": "演出记录·多机位摄录服务",
+      "category": "equipment",
+      "description": "支持演出过程记录、活动花絮和基础后期整理，交付形式可协商。",
+      "image": "/images/catalog/r038.webp"
+    },
+    {
+      "ordinal": 39,
+      "name": "八桂纹样·视觉素材授权包",
+      "category": "copyright",
+      "description": "以壮锦和铜鼓意象为灵感的原创纹样素材示例，支持文创与展陈使用咨询。",
+      "image": "/images/catalog/r039.webp"
+    },
+    {
+      "ordinal": 40,
+      "name": "山水舞台·原创配乐使用咨询",
+      "category": "copyright",
+      "description": "面向舞台、短视频和文旅活动的原创配乐合作示例，授权范围需另行确认。",
+      "image": "/images/catalog/r040.webp"
+    },
+    {
+      "ordinal": 41,
+      "name": "数字山水·沉浸视觉内容包",
+      "category": "copyright",
+      "description": "适用于展陈与舞台背景的数字视觉素材合作，提供场景适配咨询。",
+      "image": "/images/catalog/r041.webp"
+    },
+    {
+      "ordinal": 42,
+      "name": "桂风雅集·演出策划文本合作",
+      "category": "copyright",
+      "description": "围绕广西地域文化的活动策划与演出脚本合作示例，不构成正式授权。",
+      "image": "/images/catalog/r042.webp"
+    },
+    {
+      "ordinal": 43,
+      "name": "一梭一锦·壮锦织造体验",
+      "category": "heritage",
+      "description": "认识壮锦纹样与传统织机，在讲解和指导下完成一件小型织造作品。",
+      "image": "/images/heritage-workshop.webp"
+    },
+    {
+      "ordinal": 44,
+      "name": "指尖绣球·壮乡手作工坊",
+      "category": "heritage",
+      "description": "从配色到穿针，体验绣球的制作过程，适合亲子活动和团队文化体验。",
+      "image": "/images/catalog/r044.webp"
+    },
+    {
+      "ordinal": 45,
+      "name": "竹里有趣·桂北竹编课堂",
+      "category": "heritage",
+      "description": "了解竹材与编织方法，完成一个可带走的竹编小物件。",
+      "image": "/images/catalog/r045.webp"
+    },
+    {
+      "ordinal": 46,
+      "name": "铜鼓与山歌·民俗体验课",
+      "category": "heritage",
+      "description": "通过节奏、歌声与故事认识壮乡民俗，适合研学和文化交流活动。",
+      "image": "/images/catalog/r046.webp"
+    },
+    {
+      "ordinal": 47,
+      "name": "山歌入梦·壮锦香囊礼盒",
+      "category": "creative",
+      "description": "壮锦纹样与香囊工艺结合的文化礼物，适合纪念与活动伴手礼。",
+      "image": "/images/cultural-gifts.webp"
+    },
+    {
+      "ordinal": 48,
+      "name": "八桂小鼓·铜鼓文创摆件",
+      "category": "creative",
+      "description": "以铜鼓造型为灵感的桌面摆件，为书桌和日常空间增添地域文化趣味。",
+      "image": "/images/catalog/r048.webp"
+    },
+    {
+      "ordinal": 49,
+      "name": "漓江来信·山水手账套装",
+      "category": "creative",
+      "description": "将山水、竹筏和旅行记忆融入手账与纸品的文创套装示例。",
+      "image": "/images/catalog/r049.webp"
+    },
+    {
+      "ordinal": 50,
+      "name": "锦上生花·民族织物随身包",
+      "category": "creative",
+      "description": "兼顾实用收纳与织物细节的日常小包，适合个人礼物与团体定制咨询。",
+      "image": "/images/catalog/r050.webp"
+    },
+    {
+      "ordinal": 51,
+      "name": "山水入画·沉浸式数字展",
+      "category": "digital",
+      "description": "以数字投影营造可漫步的山水空间，结合光影与声音展开文化体验。",
+      "image": "/images/digital-landscape.webp"
+    },
+    {
+      "ordinal": 52,
+      "name": "云上八桂·民族艺术线上展",
+      "category": "digital",
+      "description": "在线欣赏民族艺术与纹样故事，以图文和互动内容延伸文化体验。",
+      "image": "/images/catalog/r052.webp"
+    },
+    {
+      "ordinal": 53,
+      "name": "光影铜鼓·互动艺术体验",
+      "category": "digital",
+      "description": "以铜鼓节奏触发影像与光效，体验传统文化与数字媒介的交汇。",
+      "image": "/images/catalog/r053.webp"
+    },
+    {
+      "ordinal": 54,
+      "name": "数字舞台·虚拟演艺空间导览",
+      "category": "digital",
+      "description": "通过导览认识虚拟舞台与演艺技术，适合学生和艺术爱好者体验。",
+      "image": "/images/catalog/r054.webp"
+    },
+    {
+      "ordinal": 55,
+      "name": "漓江暮色·山水与民谣半日游",
+      "category": "tourism",
+      "description": "把滨水漫步、山水风景与小型民谣现场串联，感受慢节奏的桂林傍晚。",
+      "image": "/images/river-evening.webp"
+    },
+    {
+      "ordinal": 56,
+      "name": "邕城周末·剧场与老街漫游",
+      "category": "tourism",
+      "description": "走进老街与城市文化空间，再赴一场周末演出，适合朋友结伴出行。",
+      "image": "/images/catalog/r056.webp"
+    },
+    {
+      "ordinal": 57,
+      "name": "海风有约·滨海音乐体验",
+      "category": "tourism",
+      "description": "以海边散步、日落与轻音乐现场组成滨海文化体验示例。",
+      "image": "/images/catalog/r057.webp"
+    },
+    {
+      "ordinal": 58,
+      "name": "壮乡寻音·民俗文化研学",
+      "category": "tourism",
+      "description": "结合山歌、铜鼓与手作体验的文化研学行程，可咨询团体方案。",
+      "image": "/images/catalog/r058.webp"
+    },
+    {
+      "ordinal": 59,
+      "name": "小剧场演出·舞台监督服务",
+      "category": "service",
+      "description": "协助排练衔接、舞台流程与现场调度，服务边界依据项目规模沟通。",
+      "image": "/images/catalog/r059.webp"
+    },
+    {
+      "ordinal": 60,
+      "name": "文化活动·双语主持对接",
+      "category": "service",
+      "description": "面向文化交流、艺术沙龙与文旅活动的主持方案和人员对接。",
+      "image": "/images/catalog/r060.webp"
+    },
+    {
+      "ordinal": 61,
+      "name": "团体观演·接待与导览服务",
+      "category": "service",
+      "description": "提供团体签到、观演提醒与文化空间导览等基础服务方案。",
+      "image": "/images/catalog/r061.webp"
+    },
+    {
+      "ordinal": 62,
+      "name": "演出推广·视觉与传播策划",
+      "category": "service",
+      "description": "包含演出海报方向、内容排期与渠道建议的传播合作示例。",
+      "image": "/images/catalog/r062.webp"
+    }
+  ],
+  "generated": [
+    {
+      "id": "hero-travel",
+      "file": "/images/hero-travel.webp",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic 3:1 panorama around2172x724. Guangxi Li River karst panorama at misty sunrise, one elegant wooden excursion boat on the RIGHT, emerald water, distant limestone mountains, LEFT THIRD quiet dark bamboo canopy for white HTML text. Fresh cinematic natural travel photography. No stage, no night scene, no text/logos/watermark. Full scenic frame, not a collage."
+    },
+    {
+      "id": "hero-craft",
+      "file": "/images/hero-craft.webp",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic 3:1 panorama around2172x724. A warm Zhuang artisan workshop, an adult woman at an ornate wooden brocade loom on the RIGHT with rich vermilion and indigo textiles; LEFT THIRD deep softly lit wooden interior with quiet shadow for white HTML headline. Warm window light, detailed weave texture, a different person and scene from the existing close-up craft photo. No text/logos/watermark, no collage."
+    },
+    {
+      "id": "story-travel",
+      "file": "/images/story-travel.webp",
+      "dimensions": [
+        1600,
+        800
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic 2:1 landscape around1600x800. An adult couple strolling along a green Guangxi karst valley trail beside a wooden footbridge, clear bright afternoon, cinematic natural travel editorial photograph, lush foreground and distant cliffs. No riverboat, no stage, no beach, no text/logos/watermark/collage. Subject on right and usable scenery throughout."
+    },
+    {
+      "id": "story-craft",
+      "file": "/images/story-craft.webp",
+      "dimensions": [
+        1600,
+        800
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic 2:1 landscape around1600x800. A vivid close-up table arrangement of original multicolored Guangxi embroidered balls with long red tassels and one ornate silver craft ornament, warm natural light, richly tactile stitch detail, elegant craft editorial. No loom, no people, no text/logos/watermark/collage. Not the existing gift collection; fill frame with embroidery detail."
+    },
+    {
+      "id": "r003",
+      "file": "/images/catalog/r003.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A wide low-angle photograph of an adult Zhuang ensemble striking large bronze drums on a real indoor theater stage, indigo garments with silver trim, amber side light and black backdrop."
+    },
+    {
+      "id": "r004",
+      "file": "/images/catalog/r004.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An intimate empty black-box theater with 120 seats, simple square stage, black drapes, warm wooden floor, a single amber spotlight. Interior architectural photography."
+    },
+    {
+      "id": "r005",
+      "file": "/images/catalog/r005.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Four young adult singers in pale ivory and blue traditional Zhuang dress rehearsing a folk duet beside a bamboo pavilion; voices, microphones, natural afternoon light."
+    },
+    {
+      "id": "r006",
+      "file": "/images/catalog/r006.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A row of professional moving-head stage fixtures projecting distinct amber beams across an empty black theater; lighting truss and fixtures clearly visible, no console foreground."
+    },
+    {
+      "id": "r007",
+      "file": "/images/catalog/r007.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Portable speakers, two wireless microphones and a compact audio mixer neatly arranged beside a small outdoor stage at a park in late afternoon."
+    },
+    {
+      "id": "r008",
+      "file": "/images/catalog/r008.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A refined creative studio desk with an original illustration of an adult Zhuang folk singer, a cultural pattern portfolio and an unbranded embossed license folder. No readable text."
+    },
+    {
+      "id": "r009",
+      "file": "/images/catalog/r009.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A theater set designer desk with a physical miniature stage inspired by Huashan ochre rock-painting silhouettes and karst cliffs, sketches and carefully arranged architectural model materials."
+    },
+    {
+      "id": "r010",
+      "file": "/images/catalog/r010.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An adult parent and adult workshop instructor working on colorful Zhuang embroidery swatches at a sunlit wooden craft table, close-up of hands, no loom."
+    },
+    {
+      "id": "r011",
+      "file": "/images/catalog/r011.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An adult coastal folk singer in simple light blue traditional clothing singing on a wooden fishing jetty at dawn, moored wooden boats behind, quiet Beihai coast."
+    },
+    {
+      "id": "r012",
+      "file": "/images/catalog/r012.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Single cream canvas tote with original vermilion-indigo geometric brocade motif hanging against a pale textured wall; elegant product photography, fabric tactile detail."
+    },
+    {
+      "id": "r013",
+      "file": "/images/catalog/r013.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An original decorative folk-song art print in a wooden frame with an abstract singer-and-karst illustration, small art studio props, warm daylight. No readable lettering."
+    },
+    {
+      "id": "r014",
+      "file": "/images/catalog/r014.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A professional theater livestream setup with a cinema camera in foreground and a stage performer on a far video monitor, realistic warm studio, no logos or readable UI."
+    },
+    {
+      "id": "r015",
+      "file": "/images/catalog/r015.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An adult visitor wearing an unbranded VR headset in a real cultural exhibition room, soft blue light, subtle traditional patterns, candid editorial photography."
+    },
+    {
+      "id": "r016",
+      "file": "/images/catalog/r016.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A scenic Li River daytime excursion with bamboo rafts and karst peaks, small riverside folk stage partly visible, bright clear green-and-blue travel photography."
+    },
+    {
+      "id": "r017",
+      "file": "/images/catalog/r017.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An elegant seaside boutique hotel terrace with comfortable chairs overlooking Beihai sunset and a distant acoustic music setup, warm amber horizon, no logos."
+    },
+    {
+      "id": "r018",
+      "file": "/images/catalog/r018.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Two adult cultural event consultants reviewing unlabeled paperwork and a small theater seating model at a bright neutral meeting desk, documentary professional photograph."
+    },
+    {
+      "id": "r019",
+      "file": "/images/catalog/r019.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A small diverse group of adult East Asian and Southeast Asian performing-arts collaborators discussing cultural program material in a contemporary conference space, warm daylight."
+    },
+    {
+      "id": "r020",
+      "file": "/images/catalog/r020.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Event safety consultant with a clipboard beside a neatly prepared outdoor cultural event venue, stage barrier and first-aid kit, professional risk planning, no real insignia."
+    },
+    {
+      "id": "r021",
+      "file": "/images/catalog/r021.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A premium unbranded cultural-market research report and a laptop with understated abstract charts on a desk, side-lit pen and glasses, no readable labels or numeric claims."
+    },
+    {
+      "id": "r022",
+      "file": "/images/catalog/r022.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An adult stage technician teaching two adult students how to operate a theater lighting control desk, candid workshop, warm practical light, realistic gear."
+    },
+    {
+      "id": "r024",
+      "file": "/images/catalog/r024.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A solo adult acoustic guitarist singing on a small outdoor stage beside Guilin karst landscape in late afternoon, natural documentary music photograph, earthy colors."
+    },
+    {
+      "id": "r025",
+      "file": "/images/catalog/r025.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Two adult actors performing a charming contemporary city-story play on a small stage set inspired by Nanning old street shophouses, warm indoor theatrical lighting."
+    },
+    {
+      "id": "r026",
+      "file": "/images/catalog/r026.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A dramatic solo adult Zhuang dancer with a sculptural bronze-drum stage prop, dark red costumes, strong side spotlight, cinematic dance photography, no group tableau."
+    },
+    {
+      "id": "r027",
+      "file": "/images/catalog/r027.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An empty minimalist black-box art space with flexible gray seating, a modest black stage and a suspended square warm light rig, architectural interior photograph."
+    },
+    {
+      "id": "r028",
+      "file": "/images/catalog/r028.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An open-air riverside performance stage with wooden tiers facing Guilin karst peaks in clear twilight, view from audience back, no raft foreground."
+    },
+    {
+      "id": "r030",
+      "file": "/images/catalog/r030.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A bright airy coastal arts salon interior with pale curtains, flexible seats, a piano and large windows towards a blue sea, elegant architecture, no branding."
+    },
+    {
+      "id": "r031",
+      "file": "/images/catalog/r031.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A close editorial photograph of adult traditional instrumentalists rehearsing pipa and bamboo flute in a light-filled rehearsal studio with wooden panels, pale green attire."
+    },
+    {
+      "id": "r032",
+      "file": "/images/catalog/r032.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A youthful adult indie folk band with acoustic guitar, bass and cajon performing at a lively evening cultural market, soft lantern bokeh, documentary photograph."
+    },
+    {
+      "id": "r033",
+      "file": "/images/catalog/r033.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An adult Zhuang singing-and-dance ensemble in golden yellow and deep blue costumes performing in an open courtyard, natural daylight, distinct from red stage dancers."
+    },
+    {
+      "id": "r034",
+      "file": "/images/catalog/r034.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A disciplined adult mixed choir arranged in three rows on a contemporary theater stage, formal black clothing with subtle ethnic brocade scarves, wide documentary music photo."
+    },
+    {
+      "id": "r036",
+      "file": "/images/catalog/r036.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Professional LED PAR lighting fixtures and a small DMX controller on a theater floor, several colored LED lenses visible, crisp close-up technical product photography."
+    },
+    {
+      "id": "r037",
+      "file": "/images/catalog/r037.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A modular outdoor stage being professionally assembled by adult crew in a park, aluminum truss and clean decking prominent, daylight, no dangerous actions."
+    },
+    {
+      "id": "r038",
+      "file": "/images/catalog/r038.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Two professional cinema cameras on tripods filming a theater rehearsal from the audience, warm stage in background, realistic multi-camera production setup."
+    },
+    {
+      "id": "r039",
+      "file": "/images/catalog/r039.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A beautiful portfolio of original Zhuang geometric pattern samples printed on thick art paper, indigo/vermilion swatches on a designer worktable, overhead editorial photograph."
+    },
+    {
+      "id": "r040",
+      "file": "/images/catalog/r040.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A composer desk with a bamboo flute, headphones, a small keyboard and handwritten non-readable musical notation, warm lamplight, cultural sound design photography."
+    },
+    {
+      "id": "r041",
+      "file": "/images/catalog/r041.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A large projected digital karst-mountain visual installation in an exhibition hall with one adult silhouette, bright teal mist and abstract topographic imagery, distinct composition."
+    },
+    {
+      "id": "r042",
+      "file": "/images/catalog/r042.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An arts dramaturg workspace with a small stage model, blank-cover notebook, color swatches and ceramic tea cup, warm elegant cultural planning studio photograph."
+    },
+    {
+      "id": "r044",
+      "file": "/images/catalog/r044.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Close-up adult hands sewing an intricate colorful Guangxi embroidered ball, red silk tassels and thread spools on a wood table, sunlight, detailed craft photograph."
+    },
+    {
+      "id": "r045",
+      "file": "/images/catalog/r045.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Adult bamboo artisan hands weaving a small basket, fresh pale bamboo strips and workshop tools, warm natural light, documentary close-up, no textiles."
+    },
+    {
+      "id": "r046",
+      "file": "/images/catalog/r046.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A cultural instructor explaining an ornate bronze drum to adult workshop participants in a rustic Zhuang courtyard, daylight, genuine teaching interaction."
+    },
+    {
+      "id": "r048",
+      "file": "/images/catalog/r048.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A single miniature bronze-drum souvenir on an elegant walnut desk with subtle leaf shadow, close product photograph, crisp patina and embossed geometric texture."
+    },
+    {
+      "id": "r049",
+      "file": "/images/catalog/r049.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A travel journal gift set with original karst-landscape illustrations, postcards and a blank-cover notebook on a linen table, pale blue/ivory palette, no readable text."
+    },
+    {
+      "id": "r050",
+      "file": "/images/catalog/r050.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. One indigo woven crossbody pouch with a vermilion ethnic textile panel and simple strap, product photography on a pale stone plinth, no extra gift collection."
+    },
+    {
+      "id": "r052",
+      "file": "/images/catalog/r052.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A contemporary digital museum scene showing a large interactive wall of colorful Zhuang pattern artworks with an adult curator, bright ivory gallery, no readable UI."
+    },
+    {
+      "id": "r053",
+      "file": "/images/catalog/r053.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An adult visitor interacting with a bronze-drum-shaped installation that casts concentric amber light patterns on a dark gallery wall, immersive digital-art photograph."
+    },
+    {
+      "id": "r054",
+      "file": "/images/catalog/r054.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An adult guide explaining a virtual stage visualization on a wide projection screen in a real theater technology lab, violet/blue light, no fake interface lettering."
+    },
+    {
+      "id": "r056",
+      "file": "/images/catalog/r056.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An inviting Nanning old-street walking scene with traditional arcade facades, a couple adult travelers and a small street musician, late-afternoon urban cultural photography."
+    },
+    {
+      "id": "r057",
+      "file": "/images/catalog/r057.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A small intimate acoustic concert on a sandy Beihai beach at sunset, two adult musicians and a few seated adults, calm sea and warm coral sky, no hotel."
+    },
+    {
+      "id": "r058",
+      "file": "/images/catalog/r058.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A small adult cultural study group with a local folk musician in a green Guangxi village courtyard, bamboo and bronze drum details, candid cultural travel photo."
+    },
+    {
+      "id": "r059",
+      "file": "/images/catalog/r059.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An adult stage manager wearing an unbranded headset, holding a cue sheet at the theater wing while watching a rehearsal, warm sidelight, realistic candid backstage photo."
+    },
+    {
+      "id": "r060",
+      "file": "/images/catalog/r060.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. An adult bilingual event host in a simple elegant dark red suit holding a wireless microphone in a refined cultural reception room, no real celebrity, no printed signage."
+    },
+    {
+      "id": "r061",
+      "file": "/images/catalog/r061.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. Two adult cultural venue guides welcoming a small adult group at a modern theater foyer, tickets and programs without readable text, bright professional hospitality photo."
+    },
+    {
+      "id": "r062",
+      "file": "/images/catalog/r062.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic premium editorial landscape photo, 3:2 around1536x1024, for a Guangxi performing-arts demo marketplace. Full usable image, no collage, no composite panels, no readable text, no logos, no watermarks, no named or recognizable celebrities. Distinct scene and framing; coherent natural materials and adult human anatomy. A cultural marketing designer desk with original colorful stage-event visual artwork, color swatches, pen tablet and an unbranded laptop, warm creative studio photograph."
+    },
+    {
+      "id": "r063",
+      "file": "/images/catalog/r063.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic independent 3:2 architectural photograph of a bright contemporary small arts studio, curved ivory ceiling, warm timber stage, 60 flexible seats, tall side windows with tropical green plants. Distinct interior from dark theaters. No people required, no readable text, logos, watermark or collage."
+    },
+    {
+      "id": "r064",
+      "file": "/images/catalog/r064.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic independent 3:2 premium product photograph of a single pale ceramic tea cup with original indigo geometric Guangxi-inspired decorative pattern on a linen cloth, warm side sunlight, subtle bamboo leaf shadow. Distinct from bronze drums, bags or embroidered balls. No readable text, logos, watermark or collage."
+    },
+    {
+      "id": "r065",
+      "file": "/images/catalog/r065.webp",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "tool": "built-in image_gen",
+      "prompt": "Photorealistic independent 3:2 premium product photograph of a softly folded burgundy and ivory silk scarf with original ethnic geometric pattern, a simple unbranded paper gift sleeve on warm stone table. Distinct from pouch and sachet images. Fine silk texture, natural light, no readable text, logos, watermarks or collage."
+    }
+  ],
+  "note": "One independently generated photo per task. Nine previously generated photos are each assigned to one resource only. WebP/card files are optimized delivery variants.",
+  "additionalResources": [
+    {
+      "ordinal": 63,
+      "resourceId": 63,
+      "name": "[线上验收]测试场馆",
+      "category": "venue",
+      "description": "自动化验收创建",
+      "image": "/images/catalog/r063.webp"
+    },
+    {
+      "ordinal": 64,
+      "resourceId": 64,
+      "name": "[线上验收]库存测试文创",
+      "category": "creative",
+      "description": "库存链路",
+      "image": "/images/catalog/r064.webp"
+    },
+    {
+      "ordinal": 65,
+      "resourceId": 65,
+      "name": "[线上验收]库存测试文创",
+      "category": "creative",
+      "description": "库存链路",
+      "image": "/images/catalog/r065.webp"
+    }
+  ]
+}

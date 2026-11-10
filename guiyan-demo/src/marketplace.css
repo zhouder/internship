@@ -115,28 +115,117 @@ textarea:focus-visible {
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 2px;
   left: 50%;
   bottom: 14px;
   transform: translateX(-50%);
 }
 .hero-dots button {
-  width: 9px;
-  height: 9px;
+  position: relative;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
   border-radius: 50%;
+  background: transparent;
+}
+.hero-dots button::before {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
   background: #ffffff80;
 }
-.hero-dots button[aria-pressed="true"] {
+.hero-dots button[aria-pressed="true"]::before {
   background: #fff;
 }
-.hero-dots button::after {
-  content: "";
-  display: block;
-  width: 22px;
-  height: 22px;
-  transform: translate(-7px, -7px);
+.market-hero {
+  touch-action: pan-y;
+}
+.market-hero .hero-arrow,
+.market-hero .hero-toggle {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ffffff70;
+  border-radius: 50%;
+  color: #fff;
+  background: #11111155;
+  z-index: 2;
+}
+.market-hero .hero-arrow {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
+}
+.market-hero .hero-arrow:hover,
+.market-hero .hero-toggle:hover {
+  background: #11111188;
+}
+.hero-previous {
+  left: 14px;
+}
+.hero-next {
+  right: 14px;
+}
+.market-hero .hero-toggle {
+  width: 28px;
+  height: 28px;
+  bottom: 10px;
+  right: 18px;
+  padding: 0;
+}
+.mobile-hero .hero-arrow {
+  width: 32px;
+  height: 32px;
+  top: 65%;
+  bottom: auto;
+  padding: 0;
+}
+.mobile-hero .hero-previous {
+  left: 7px;
+  right: auto;
+}
+.mobile-hero .hero-next {
+  right: 7px;
+  left: auto;
+}
+.mobile-hero .hero-toggle {
+  width: 24px;
+  height: 24px;
+  right: 10px;
+  left: auto;
+  top: auto;
+  bottom: 6px;
+}
+.market-hero > img {
+  animation: hero-reveal 0.35s ease;
+}
+@keyframes hero-reveal {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .market-hero .hero-arrow {
+    opacity: 0;
+  }
+  .market-hero:hover .hero-arrow,
+  .market-hero:focus-within .hero-arrow {
+    opacity: 1;
+  }
 }
 .market-categories {
   background: #fff;
@@ -328,10 +417,14 @@ textarea:focus-visible {
   height: 16px;
 }
 .mobile-hero .hero-dots {
-  bottom: 8px;
-  gap: 5px;
+  bottom: 1px;
+  gap: 0;
 }
 .mobile-hero .hero-dots button {
+  width: 24px;
+  height: 24px;
+}
+.mobile-hero .hero-dots button::before {
   width: 6px;
   height: 6px;
 }

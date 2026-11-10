@@ -63,6 +63,10 @@ test("公开浏览提供资源但不泄露私有订单或密码", async () => {
   const r = await request("/bootstrap");
   assert.equal(r.status, 200);
   assert.equal(r.data.resources.length, 22 + catalogResources.length);
+  assert.equal(
+    new Set(r.data.resources.map((resource) => resource.image)).size,
+    r.data.resources.length,
+  );
   assert.equal(r.data.categories.length, 10);
   assert.equal(r.data.orders.length, 0);
   assert.equal(r.data.profiles.length, 0);

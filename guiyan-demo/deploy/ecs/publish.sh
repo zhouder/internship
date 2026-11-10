@@ -12,6 +12,7 @@ tar --no-same-owner -xzf "$archive" -C "$release_dir"
 chown -R guiyan:guiyan "$release_dir"
 cd "$release_dir"
 runuser -u guiyan -- npm ci --registry=https://registry.npmjs.org --no-audit --no-fund
+runuser -u guiyan -- npm run check:images
 runuser -u guiyan -- npm run build
 runuser -u guiyan -- npm run check:mini
 chown -R root:root "$release_dir"
