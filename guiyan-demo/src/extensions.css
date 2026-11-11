@@ -109,7 +109,11 @@
   min-width: 0;
 }
 .ticket-print-sheet {
-  display: none;
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
 }
 .booking-seats {
   display: grid;
@@ -174,10 +178,12 @@
   }
 }
 @media print {
-  body > * {
+  body > *:not(.ticket-print-sheet) {
     display: none !important;
   }
-  body > .ticket-print-sheet {
+  .ticket-print-sheet {
+    position: static !important;
+    opacity: 1 !important;
     display: block !important;
   }
   .ticket-print-sheet .demo-ticket {
@@ -185,8 +191,12 @@
     margin: 12mm;
     flex-direction: row;
     color: #000;
+    page-break-inside: avoid;
   }
   .ticket-print-sheet .note {
     font-size: 10pt;
+  }
+  @page {
+    margin: 0;
   }
 }

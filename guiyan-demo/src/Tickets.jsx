@@ -69,12 +69,13 @@ export function Tickets({ order, onClose }) {
     if (!printing.length) return;
     const done = () => setPrinting([]);
     window.addEventListener("afterprint", done);
-    const timer = setTimeout(() => {
-      window.print();
-      setPrinting([]);
-    }, 200);
+    // 使用 requestAnimationFrame 避免闪烁
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+      });
+    });
     return () => {
-      clearTimeout(timer);
       window.removeEventListener("afterprint", done);
     };
   }, [printing]);
