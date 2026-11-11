@@ -8,6 +8,8 @@ import { openSqliteStore, createRequestHandler } from "./database.mjs";
 import { categoryImages } from "./catalog-content.mjs";
 import { createInsights, dayOf, shiftDay } from "./insights.mjs";
 import { inventoryMode } from "./review-upgrade.mjs";
+import { createDemoExtensions } from "./demo-extensions.mjs";
+import { createBookingSlots } from "./booking-slots.mjs";
 import { operatorAnswer, supportAnswer, copyAnswer } from "./assistants.mjs";
 import {
   createDeepseek,
@@ -115,20 +117,42 @@ export async function createApp({
     resourceRow,
   });
   async function available(r, d) {
-    const mode = inventoryMode(r);
-    if (mode === "none") return null;
-    const held = await get(
-      "SELECT COALESCE(SUM(quantity),0) AS n FROM orders WHERE resource_id=? AND booking_date=? AND status NOT IN ('cancelled','refunded')",
-      r.id,
-      d,
+    return (await slots.availability(r, d)).available;
+  }
+  const slots = createBookingSlots({ all, assert, int });
+  const ops = createDemoExtensions({
+    all,
+    get,
+    run,
+    audit,
+    notify,
+    assert,
+    int,
+    text,
+    currentDay,
+  });
+  async function saveProfileSnapshots(source = "manual") {
+    const profiles = await profileRows(),
+      day = currentDay();
+    for (const profile of profiles)
+      await run(
+        "INSERT INTO profile_snapshots(user_id,snapshot_date,data) VALUES(?,?,?) ON CONFLICT(user_id,snapshot_date) DO UPDATE SET data=excluded.data",
+        profile.id,
+        day,
+        JSON.stringify(profile),
+      );
+    const summary = {
+      date: day,
+      count: profiles.length,
+      source,
+      created_at: time(),
+    };
+    await run(
+      "INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      "lastProfileSnapshot",
+      JSON.stringify(summary),
     );
-    return mode === "rental"
-      ? held.n
-        ? 0
-        : 1
-      : mode === "date"
-        ? Math.max(0, Number(r.daily_capacity ?? r.stock) - Number(held.n))
-        : r.stock;
+    return summary;
   }
   const handle = async (req, res) => {
     const today = currentDay();
@@ -144,7 +168,8 @@ export async function createApp({
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type,Authorization",
+        "Access-Control-Allow-Headers":
+          "Content-Type,Authorization,X-Guiyan-Channel",
         "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
       });
       res.end();
@@ -243,6 +268,8 @@ export async function createApp({
         assert(isAdmin(u), "需要管理员权限", 403);
         return u;
       };
+      if (await ops.handle({ p, b, req, session, needUser, needAdmin, send }))
+        return;
       if (p === "/api/health") {
         send({
           ok: true,
@@ -357,10 +384,16 @@ export async function createApp({
           database: db.dialect,
           user: session ? safeUser(session) : null,
           ai: ai.info(),
+          benefits: session ? await ops.benefits(session) : null,
+          operations: isAdmin(session) ? await ops.report() : null,
           categories,
           resources,
           recommendations: session
-            ? await recommendations(session, resources)
+            ? await recommendations(
+                session,
+                resources,
+                req.headers["x-guiyan-channel"],
+              )
             : [],
           inventoryThreshold,
           demands,
@@ -583,7 +616,7 @@ export async function createApp({
             2,
           );
           await run(
-            "UPDATE orders SET paid_at=?,stock_mode='date' WHERE id=?",
+            "UPDATE orders SET paid_at=?,stock_mode='date',gross_amount=amount WHERE id=?",
             time(),
             synced.id,
           );
@@ -742,19 +775,10 @@ export async function createApp({
           d = date(b.date);
         assert(!bookingType(r) || qty === 1, "租赁类资源每单数量为1");
         const id = await transaction(async () => {
-          if (bookingType(r))
-            assert(
-              !(await get(
-                "SELECT id FROM orders WHERE resource_id=? AND booking_date=? AND status NOT IN ('cancelled','refunded')",
-                rid,
-                d,
-              )),
-              "该档期已被预约，请选择其他日期",
-              409,
-            );
-          else if (inventoryMode(r) === "date") {
-            assert((await available(r, d)) >= qty, "所选日期库存不足", 409);
-          } else if (inventoryMode(r) === "global") {
+          const selection = slots.selection(r, b),
+            seats = await slots.reserveSelection(r, d, qty, selection),
+            quote = await ops.quote(u, r, qty, b);
+          if (inventoryMode(r) === "global") {
             const updated = await run(
               "UPDATE resources SET stock=stock-? WHERE id=? AND stock>=?",
               qty,
@@ -769,7 +793,7 @@ export async function createApp({
             u.id,
             rid,
             qty,
-            r.price * qty,
+            quote.amount,
             d,
             "pending",
             ["H5", "电脑网页", "微信小程序"].includes(b.channel)
@@ -779,10 +803,15 @@ export async function createApp({
             time(),
           );
           await run(
-            "UPDATE orders SET stock_mode=? WHERE id=?",
+            "UPDATE orders SET stock_mode=?,session_time=?,seat_labels=?,start_time=?,end_time=? WHERE id=?",
             inventoryMode(r),
+            selection.session,
+            JSON.stringify(seats),
+            selection.start,
+            selection.end,
             Number(result.lastInsertRowid),
           );
+          await ops.bindQuote(Number(result.lastInsertRowid), quote);
           await notify(
             u.id,
             "预约提交成功",
@@ -845,6 +874,7 @@ export async function createApp({
           ? text(b.reason, "拒绝原因", 500)
           : null;
         await transaction(async () => {
+          await ops.beforeTransition(o, action, b, u);
           await run(
             "UPDATE orders SET status=?,escrow=?,refund_reason=? WHERE id=?",
             to,
@@ -896,10 +926,11 @@ export async function createApp({
               o.quantity,
               o.resource_id,
             );
+          await ops.afterTransition(o, action, to);
           await notify(
             o.user_id,
             "订单状态更新",
-            `${o.code} · ${o.resource_name} → ${to}。${action === "pay" ? "这是模拟支付，未扣款。" : ""}${decision ? "售后未通过：" + decision : ""}`,
+            `${o.code} · ${o.resource_name} → ${to}。${action === "pay" ? "这是模拟支付，未扣除真实资金。" : ""}${decision ? "售后未通过：" + decision : ""}`,
             1,
             "system",
             o.id,
@@ -1155,20 +1186,14 @@ export async function createApp({
             (await all("SELECT * FROM resources WHERE status='published'")).map(
               resourceRow,
             ),
+            url.searchParams.get("channel") || req.headers["x-guiyan-channel"],
           ),
         });
         return;
       }
       if (p === "/api/profiles/snapshot" && req.method === "POST") {
-        const u = needAdmin(),
-          profiles = await profileRows();
-        for (const profile of profiles)
-          await run(
-            "INSERT INTO profile_snapshots(user_id,snapshot_date,data) VALUES(?,?,?) ON CONFLICT(user_id,snapshot_date) DO UPDATE SET data=excluded.data",
-            profile.id,
-            today,
-            JSON.stringify(profile),
-          );
+        const u = needAdmin();
+        await saveProfileSnapshots("manual");
         await audit(u, "保存画像快照", today);
         send({
           ok: true,
@@ -1411,15 +1436,14 @@ export async function createApp({
           404,
         );
         send({
-          mode: inventoryMode(resource),
-          date: url.searchParams.get("date") || today,
-          available: await available(
+          ...(await slots.availability(
             resource,
             date(url.searchParams.get("date") || today),
-          ),
-          capacity: resource.daily_capacity ?? resource.stock,
+            slots.selection(resource, Object.fromEntries(url.searchParams)),
+          )),
+          date: url.searchParams.get("date") || today,
           dates: await all(
-            "SELECT booking_date,status FROM orders WHERE resource_id=? AND status NOT IN ('cancelled','refunded')",
+            "SELECT booking_date,status,session_time,start_time,end_time FROM orders WHERE resource_id=? AND status NOT IN ('cancelled','refunded')",
             id,
           ),
         });
@@ -1449,6 +1473,12 @@ export async function createApp({
   const handler = createRequestHandler(db, handle);
   const server = http.createServer(handler);
   server.handler = handler;
+  server.snapshotProfiles = () =>
+    db.request(() => saveProfileSnapshots("timer"), {
+      write: true,
+      success: () => true,
+    });
+  server.dispose = () => db.close();
   server.on("close", () => db.close());
   return server;
 }

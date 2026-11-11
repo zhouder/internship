@@ -28,6 +28,7 @@ import { Demands } from "./pages/Demands";
 import { Transactions } from "./pages/Transactions";
 import { Moderation } from "./pages/Moderation";
 import { Settings as SettingsPage } from "./pages/Settings";
+import { Operations } from "./pages/Operations";
 
 const nav = [
   ["overview", "总览", Home],
@@ -37,6 +38,7 @@ const nav = [
   ["resources", "演艺资源", Layers],
   ["demands", "需求大厅", ClipboardList],
   ["orders", "交易管理", ShoppingBag],
+  ["operations", "票务与运营", ClipboardList],
   ["moderation", "内容审核", ShieldCheck],
   ["settings", "系统设置", Settings],
 ];
@@ -166,6 +168,7 @@ function Admin({ onOpen }) {
           {page === "ai" ? <AI /> : null}
           {page === "demands" ? <Demands onOpen={onOpen} /> : null}
           {page === "orders" ? <Transactions /> : null}
+          {page === "operations" ? <Operations /> : null}
           {page === "moderation" ? <Moderation /> : null}
           {page === "settings" ? <SettingsPage /> : null}
         </main>

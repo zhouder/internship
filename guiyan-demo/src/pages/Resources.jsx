@@ -360,6 +360,12 @@ export function ResourceDetail({
         .slice(0, 10),
     ),
     [qty, setQty] = useState(1),
+    [sessionTime, setSessionTime] = useState("19:30"),
+    [startTime, setStartTime] = useState("09:00"),
+    [endTime, setEndTime] = useState("18:00"),
+    [seats, setSeats] = useState([]),
+    [occupied, setOccupied] = useState([]),
+    [couponClaim, setCouponClaim] = useState(""),
     [note, setNote] = useState(""),
     [content, setContent] = useState(""),
     [rating, setRating] = useState(5),
@@ -377,11 +383,21 @@ export function ResourceDetail({
     let active = true;
     setInventoryLoading(true);
     setInventoryError("");
-    api("/availability?resourceId=" + r.id + "&date=" + date)
+    api(
+      "/availability?" +
+        new URLSearchParams({
+          resourceId: r.id,
+          date,
+          sessionTime,
+          startTime,
+          endTime,
+        }),
+    )
       .then((v) => {
         if (active) {
           setAvailability(v.dates);
           setRemaining(v.available);
+          setOccupied(v.occupiedSeats || []);
         }
       })
       .catch((e) => {
@@ -393,7 +409,21 @@ export function ResourceDetail({
     return () => {
       active = false;
     };
-  }, [r.id, date, data.orders, data.resources]);
+  }, [
+    r.id,
+    date,
+    sessionTime,
+    startTime,
+    endTime,
+    data.orders,
+    data.resources,
+  ]);
+  useEffect(() => {
+    setSeats([]);
+  }, [date, sessionTime]);
+  useEffect(() => {
+    setCouponClaim("");
+  }, [qty]);
   const rental = ["venue", "equipment"].includes(r.category),
     favorite = data.favorites.includes(r.id),
     comments = data.comments.filter(
@@ -411,7 +441,18 @@ export function ResourceDetail({
     if (!requireLogin()) return;
     const result = await action(
       "/orders",
-      { resourceId: r.id, date, quantity: Number(qty), note, channel },
+      {
+        resourceId: r.id,
+        date,
+        quantity: Number(qty),
+        note,
+        channel,
+        sessionTime,
+        startTime,
+        endTime,
+        seats,
+        couponClaim,
+      },
       "预约已提交，等待后台确认",
     );
     if (result) {
@@ -453,7 +494,7 @@ export function ResourceDetail({
           </strong>
           {rental ? (
             <p className="resource-hint">
-              按天独占，每个日期仅接受一单预约，数量固定为1。
+              按所选时段独占，系统检查时间重叠；按展示单价计费，不自动折算小时价。
             </p>
           ) : r.category === "service" ? (
             <p className="resource-hint">
@@ -461,7 +502,9 @@ export function ResourceDetail({
             </p>
           ) : r.inventory_mode === "date" ? (
             <p className="resource-hint">
-              按日期独立配额，选定日期后查看余量。
+              {r.category === "show"
+                ? "按日期和场次独立配额，选定场次后查看余量与座位。"
+                : "按日期独立配额，选定日期后查看余量。"}
             </p>
           ) : null}
           <button
@@ -587,7 +630,7 @@ export function ResourceDetail({
             <CalendarDays size={18} />
             <div>
               {rental
-                ? "场馆和设备按天独占预约，系统自动校验档期冲突。"
+                ? "场馆和设备支持时段预约，系统自动校验时间重叠，数量固定为1。"
                 : "订单经后台确认后，可在“我的订单”进行模拟支付。"}
               <br />
               模拟协议、物流与权益在订单中查看。
@@ -598,9 +641,11 @@ export function ResourceDetail({
               <strong>已有预约</strong>
               <div>
                 {availability.length ? (
-                  availability
-                    .slice(0, 12)
-                    .map((a, i) => <span key={i}>{a.booking_date}</span>)
+                  availability.slice(0, 12).map((a, i) => (
+                    <span key={i}>
+                      {a.booking_date} {a.start_time}–{a.end_time}
+                    </span>
+                  ))
                 ) : (
                   <span>暂无占用档期</span>
                 )}
@@ -621,10 +666,10 @@ export function ResourceDetail({
             <FormField
               label={
                 rental
-                  ? "数量（按天独占）"
+                  ? "数量（按时段独占）"
                   : r.category === "service"
                     ? "预约数量"
-                    : `数量 · ${inventoryLoading ? "余量查询中" : inventoryError ? "余量查询失败" : (r.inventory_mode === "date" ? "所选日期剩余" : "剩余") + remaining}`
+                    : `数量 · ${inventoryLoading ? "余量查询中" : inventoryError ? "余量查询失败" : (r.category === "show" ? "所选场次剩余" : r.inventory_mode === "date" ? "所选日期剩余" : "剩余") + remaining}`
               }
             >
               <input
@@ -640,10 +685,80 @@ export function ResourceDetail({
                 }
                 disabled={rental}
                 value={qty}
-                onChange={(e) => setQty(e.target.value)}
+                onChange={(e) => {
+                  setQty(e.target.value);
+                  setSeats([]);
+                }}
               />
             </FormField>
           </div>
+          {rental ? (
+            <div className="form-row">
+              <FormField label="开始时间">
+                <input
+                  aria-label="开始时间"
+                  type="time"
+                  required
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </FormField>
+              <FormField label="结束时间">
+                <input
+                  aria-label="结束时间"
+                  type="time"
+                  required
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </FormField>
+            </div>
+          ) : null}
+          {r.category === "show" ? (
+            <>
+              <FormField label="演出场次">
+                <select
+                  aria-label="演出场次"
+                  value={sessionTime}
+                  onChange={(e) => setSessionTime(e.target.value)}
+                >
+                  <option value="14:00">14:00（模拟场次）</option>
+                  <option value="19:30">19:30（模拟场次）</option>
+                </select>
+              </FormField>
+              <div>
+                <p>示例选座 · 已选{seats.length}席</p>
+                <div className="booking-seats" aria-label="示例选座">
+                  {Array.from(
+                    { length: Math.min(60, r.daily_capacity ?? r.stock) },
+                    (_, i) => i + 1,
+                  ).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      aria-label={`座位${n}`}
+                      aria-pressed={seats.includes(n)}
+                      disabled={inventoryLoading || occupied.includes(n)}
+                      className={seats.includes(n) ? "selected" : ""}
+                      onClick={() => {
+                        const next = seats.includes(n)
+                          ? seats.filter((x) => x !== n)
+                          : [...seats, n];
+                        setSeats(next);
+                        setQty(next.length || 1);
+                      }}
+                    >
+                      {Math.floor((n - 1) / 10) + 1}-{((n - 1) % 10) + 1}
+                    </button>
+                  ))}
+                </div>
+                <p className="seat-legend">
+                  红色已选 ·
+                  灰色已占用。仅展示前60席；不选座时由系统模拟配票。座位仅在提交成功后占用。
+                </p>
+              </div>
+            </>
+          ) : null}
           {inventoryError ? (
             <p role="alert" className="stock-warning">
               {inventoryError}，请重新选择日期后重试。
@@ -668,8 +783,42 @@ export function ResourceDetail({
               placeholder="可填写人数、使用场景或定制要求"
             />
           </FormField>
+          {data.user ? (
+            <FormField label="使用演示优惠券">
+              <select
+                aria-label="使用演示优惠券"
+                value={couponClaim}
+                onChange={(e) => setCouponClaim(e.target.value)}
+              >
+                <option value="">不使用优惠券</option>
+                {(data.benefits?.claims || [])
+                  .filter(
+                    (c) =>
+                      c.status === "available" &&
+                      c.min_spend <= r.price * Number(qty),
+                  )
+                  .map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name} · 减{money(c.amount)}
+                    </option>
+                  ))}
+              </select>
+              <small>请先在“我的 → 模拟钱包与优惠券”领券；每单最多一张。</small>
+            </FormField>
+          ) : null}
           <div className="order-total">
-            合计 <strong>{money(r.price * Number(qty || 1))}</strong>
+            合计{" "}
+            <strong>
+              {money(
+                Math.max(
+                  0,
+                  r.price * Number(qty || 1) -
+                    ((data.benefits?.claims || []).find(
+                      (c) => c.code === couponClaim,
+                    )?.amount || 0),
+                ),
+              )}
+            </strong>
           </div>
           <p className="note">所有支付均为模拟，不收取真实费用。</p>
           <SubmitButton

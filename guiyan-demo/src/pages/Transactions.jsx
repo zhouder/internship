@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FileText, Download, Package, ShieldCheck } from "lucide-react";
 import { useApp } from "../state";
+import { Tickets } from "../Tickets";
 import {
   api,
   money,
@@ -21,15 +22,21 @@ import {
 export function OrderActions({ order: o, onContract }) {
   const { data, action, busy } = useApp(),
     admin = data.user?.role === "admin";
-  const [reason, setReason] = useState("");
-  const mutate = (act) =>
+  const [reason, setReason] = useState(""),
+    [ticket, setTicket] = useState(false);
+  const mutate = (act, paymentMethod = "mock") =>
     action(
       "/orders/" + o.id,
       {
         action: act,
+        paymentMethod,
         reason: reason || (act.startsWith("reject") ? "" : "用户提交售后申请"),
       },
-      act === "pay" ? "模拟支付成功，未扣款" : "订单已更新",
+      act === "pay"
+        ? paymentMethod === "balance"
+          ? "模拟余额支付成功，未扣真实资金"
+          : "模拟支付成功，未扣真实资金"
+        : "订单已更新",
       "PATCH",
     );
   return (
@@ -52,6 +59,27 @@ export function OrderActions({ order: o, onContract }) {
               驳回
             </button>
           </>
+        ) : null}
+        {o.status === "confirmed" && data.user.id === o.user_id ? (
+          <button
+            className="button small"
+            disabled={busy}
+            onClick={() => mutate("pay", "balance")}
+          >
+            模拟余额支付
+          </button>
+        ) : null}
+        {o.category === "show" &&
+        [
+          "paid",
+          "completed",
+          "refunded",
+          "refund_requested",
+          "disputed",
+        ].includes(o.status) ? (
+          <button className="button small" onClick={() => setTicket(true)}>
+            电子票 / 打印
+          </button>
         ) : null}
         {o.status === "confirmed" ? (
           <button
@@ -78,7 +106,7 @@ export function OrderActions({ order: o, onContract }) {
               disabled={busy}
               onClick={() => mutate("complete")}
             >
-              确认完成
+              {o.category === "show" ? "结束订单并作废未用票" : "确认完成"}
             </button>
             <button
               className="button small"
@@ -132,6 +160,7 @@ export function OrderActions({ order: o, onContract }) {
           协议 / 权益
         </button>
       </div>
+      {ticket ? <Tickets order={o} onClose={() => setTicket(false)} /> : null}
       {o.status === "paid" ||
       (admin && ["refund_requested", "disputed"].includes(o.status)) ? (
         <input
@@ -222,6 +251,29 @@ export function Transactions({ mobile = false }) {
                   {o.booking_date} · {o.quantity}
                   {o.unit} · {o.channel}
                 </p>
+                <p>
+                  {o.category === "show"
+                    ? `场次 ${o.session_time} · 座位 ${
+                        JSON.parse(o.seat_labels || "[]")
+                          .map(
+                            (n) =>
+                              `${Math.floor((n - 1) / 10) + 1}排${((n - 1) % 10) + 1}座`,
+                          )
+                          .join("、") || "渠道配票（模拟）"
+                      }`
+                    : ["venue", "equipment"].includes(o.category)
+                      ? `时段 ${o.start_time}–${o.end_time}`
+                      : ""}
+                </p>
+                {o.discount_amount > 0 ? (
+                  <p>
+                    原价{money(o.gross_amount)} · 演示券优惠
+                    {money(o.discount_amount)}
+                  </p>
+                ) : null}
+                {o.payment_method === "balance" ? (
+                  <p>使用模拟余额支付</p>
+                ) : null}
                 {!mobile ? <p>预约人：{o.user_name}</p> : null}
                 <p className="muted">{shortDate(o.created_at)}</p>
               </div>

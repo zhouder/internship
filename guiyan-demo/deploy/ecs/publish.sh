@@ -36,9 +36,11 @@ chmod 600 /etc/guiyan/demo.env
 install -m 644 deploy/ecs/guiyan.service /etc/systemd/system/guiyan.service
 install -m 644 deploy/ecs/guiyan-backup.service /etc/systemd/system/guiyan-backup.service
 install -m 644 deploy/ecs/guiyan-backup.timer /etc/systemd/system/guiyan-backup.timer
+install -m 644 deploy/ecs/guiyan-snapshot.service /etc/systemd/system/guiyan-snapshot.service
+install -m 644 deploy/ecs/guiyan-snapshot.timer /etc/systemd/system/guiyan-snapshot.timer
 install -m 755 deploy/ecs/backup.sh /usr/local/sbin/guiyan-backup
 systemctl daemon-reload
-systemctl enable guiyan guiyan-backup.timer
+systemctl enable guiyan guiyan-backup.timer guiyan-snapshot.timer
 systemctl restart guiyan
 for attempt in $(seq 1 30); do
     if curl --silent --fail http://127.0.0.1:3001/api/health >/dev/null; then break; fi
@@ -60,5 +62,6 @@ if [[ -L /etc/nginx/sites-enabled/default ]]; then unlink /etc/nginx/sites-enabl
 nginx -t
 systemctl reload nginx
 systemctl start guiyan-backup.timer guiyan-backup.service
+systemctl start guiyan-snapshot.timer guiyan-snapshot.service
 echo
 echo "Published $release_id"

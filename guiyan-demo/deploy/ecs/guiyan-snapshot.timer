@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Guiyan profile snapshots
+
+[Timer]
+OnCalendar=*-*-* 00:10:00 Asia/Shanghai
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

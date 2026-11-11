@@ -31,6 +31,7 @@ export async function api(path, { method = "GET", body } = {}) {
   const response = await fetch("/api" + path, {
     method,
     headers: {
+      "X-Guiyan-Channel": location.pathname.startsWith("/h5") ? "H5" : "web",
       ...(body ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },

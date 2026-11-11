@@ -6,6 +6,7 @@ import { demoStatements } from "./demo-data.mjs";
 import { enrichCatalog } from "./catalog-content.mjs";
 import { enrichResourceArtwork } from "./resource-artwork.mjs";
 import { upgradeColumns, upgradeReview } from "./review-upgrade.mjs";
+import { upgradeExtensions } from "./extension-schema.mjs";
 
 // PostgreSQL aggregates return int8/numeric strings; the demo API uses numbers.
 pg.types.setTypeParser(20, Number);
@@ -90,6 +91,7 @@ export async function openPostgresStore(
       await enrichCatalog(catalogDb);
       await enrichResourceArtwork(catalogDb);
       await upgradeReview(catalogDb);
+      await upgradeExtensions(catalogDb);
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");

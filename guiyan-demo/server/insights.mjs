@@ -81,7 +81,7 @@ export function createInsights({
           .at(-1) || null;
       const bands = new Map();
       for (const o of paid.filter((o) => o.category === "show")) {
-        const b = priceBand(o.amount / o.quantity);
+        const b = priceBand((o.gross_amount || o.amount) / o.quantity);
         bands.set(b, (bands.get(b) || 0) + o.quantity);
       }
       const views = events.filter((e) => e.user_id === u.id),
@@ -157,8 +157,25 @@ export function createInsights({
       };
     });
   }
-  async function recommendations(user, resources) {
+  async function recommendations(user, resources, channel = "H5") {
     if (!user) return [];
+    if (channel === "web") channel = "电脑网页";
+    const policies = JSON.parse(
+      (
+        await get(
+          "SELECT value FROM settings WHERE key=?",
+          "recommendationPolicies",
+        )
+      )?.value || "{}",
+    );
+    const weights = policies[channel] ||
+      policies.H5 || {
+        interest: 20,
+        view: 2,
+        favorite: 5,
+        purchase: 8,
+        city: 6,
+      };
     const views = await all(
         "SELECT detail FROM events WHERE type='view' AND user_id=? ORDER BY id DESC LIMIT 100",
         user.id,
@@ -171,12 +188,12 @@ export function createInsights({
     const byId = new Map(resources.map((r) => [r.id, r])),
       signals = new Map();
     for (const [rows, key, weight, label] of [
-      [views, "detail", 2, "浏览"],
-      [favorites, "resource_id", 5, "收藏"],
+      [views, "detail", weights.view, "浏览"],
+      [favorites, "resource_id", weights.favorite, "收藏"],
       [
         orders.filter((o) => paidStatuses.includes(o.status)),
         "resource_id",
-        8,
+        weights.purchase,
         "购买",
       ],
     ])
@@ -195,7 +212,7 @@ export function createInsights({
         const reasons = [];
         const signal = signals.get(r.category);
         if (r.category === user.preference) {
-          score += 20;
+          score += weights.interest;
           reasons.push("符合你的兴趣偏好");
         }
         if (signal) {
@@ -203,7 +220,7 @@ export function createInsights({
           reasons.push("你" + [...signal.reasons].join("、") + "过同类资源");
         }
         if (r.city === user.city) {
-          score += 6;
+          score += weights.city;
           reasons.push("与你的所在城市相同");
         }
         return {
@@ -296,8 +313,11 @@ export function createInsights({
           o.resource_id === r.id &&
           o.booking_date >= today &&
           !["cancelled", "refunded"].includes(o.status),
-      ))
-        held.set(o.booking_date, (held.get(o.booking_date) || 0) + o.quantity);
+      )) {
+        const key =
+          o.booking_date + (r.category === "show" ? " " + o.session_time : "");
+        held.set(key, (held.get(key) || 0) + o.quantity);
+      }
       for (const [date, quantity] of held) {
         const left = Math.max(0, (r.daily_capacity ?? r.stock) - quantity);
         if (left <= threshold)
@@ -364,7 +384,9 @@ export function createInsights({
         );
         const performances = [
           ...new Set(
-            showOrders.map((o) => `${o.resource_id}:${o.booking_date}`),
+            showOrders.map(
+              (o) => `${o.resource_id}:${o.booking_date}:${o.session_time}`,
+            ),
           ),
         ];
         const seats = performances.reduce(

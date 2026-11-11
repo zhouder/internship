@@ -88,6 +88,22 @@ async function availability(id, date) {
   assert.equal(r.status, 200);
   return r.data.available;
 }
+async function extensionOrder(resourceId, options = {}) {
+  const r = await request("/orders", {
+    token: user,
+    method: "POST",
+    body: { resourceId, date: "2099-01-01", quantity: 1, ...options },
+  });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  return r.data.id;
+}
+async function transition(id, action, token = user, extra = {}) {
+  return request("/orders/" + id, {
+    token,
+    method: "PATCH",
+    body: { action, ...extra },
+  });
+}
 test("公开浏览提供资源但不泄露私有订单或密码", async () => {
   const r = await request("/bootstrap");
   assert.equal(r.status, 200);
@@ -1140,3 +1156,392 @@ test(
     assert.equal(after.resources.length, before.resources.length);
   },
 );
+
+test("模拟券占用、取消返还、余额支付和退款只执行一次", async () => {
+  assert.equal((await request("/benefits")).status, 401);
+  assert.equal(
+    (await request("/demo/coupons", { token: user, method: "POST", body: {} }))
+      .status,
+    403,
+  );
+  assert.equal(
+    (
+      await request("/demo/coupons/claim", {
+        token: user,
+        method: "POST",
+        body: { code: "WELCOME20" },
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (
+      await request("/demo/coupons/claim", {
+        token: user,
+        method: "POST",
+        body: { code: "WELCOME20" },
+      })
+    ).status,
+    409,
+  );
+  const claim = (await request("/benefits", { token: user })).data.claims.find(
+    (c) => c.coupon_code === "WELCOME20",
+  ).code;
+  const rid = await reviewResource("show", 10),
+    id = await extensionOrder(rid, {
+      couponClaim: claim,
+      sessionTime: "19:30",
+      seats: [1],
+    });
+  assert.equal(
+    (await extensionOrder(rid, { sessionTime: "14:00", seats: [1] })) > 0,
+    true,
+  );
+  const duplicate = await request("/orders", {
+    token: user,
+    method: "POST",
+    body: {
+      resourceId: rid,
+      date: "2099-01-02",
+      quantity: 1,
+      couponClaim: claim,
+    },
+  });
+  assert.equal(duplicate.status, 409);
+  assert.equal((await transition(id, "cancel")).status, 200);
+  assert.equal(
+    (await request("/benefits", { token: user })).data.claims.find(
+      (c) => c.code === claim,
+    ).status,
+    "available",
+  );
+  const second = await extensionOrder(rid, {
+    couponClaim: claim,
+    date: "2099-01-03",
+    sessionTime: "19:30",
+  });
+  await transition(second, "confirm", admin);
+  assert.equal(
+    (await transition(second, "pay", user, { paymentMethod: "balance" }))
+      .status,
+    409,
+  );
+  assert.equal(
+    (await transition(second, "pay", admin, { paymentMethod: "balance" }))
+      .status,
+    403,
+  );
+  await request("/demo/wallet/recharge", {
+    token: user,
+    method: "POST",
+    body: { amount: 30000 },
+  });
+  const results = await Promise.all([
+    transition(second, "pay", user, { paymentMethod: "balance" }),
+    transition(second, "pay", user, { paymentMethod: "balance" }),
+  ]);
+  assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
+  let benefits = (await request("/benefits", { token: user })).data;
+  assert.equal(benefits.balance, 14000);
+  assert.equal(benefits.claims.find((c) => c.code === claim).status, "used");
+  const order = (await request("/bootstrap", { token: user })).data.orders.find(
+    (o) => o.id === second,
+  );
+  assert.equal(order.gross_amount, 18000);
+  assert.equal(order.discount_amount, 2000);
+  assert.equal(order.amount, 16000);
+  const tickets = (
+    await request("/orders/" + second + "/tickets", { token: user })
+  ).data.tickets;
+  assert.equal(tickets.length, 1);
+  await transition(second, "refund");
+  assert.equal(
+    (
+      await request("/demo/tickets/verify", {
+        token: admin,
+        method: "POST",
+        body: { code: tickets[0].code },
+      })
+    ).status,
+    409,
+  );
+  assert.equal((await transition(second, "approveRefund", admin)).status, 200);
+  assert.equal((await transition(second, "approveRefund", admin)).status, 409);
+  benefits = (await request("/benefits", { token: user })).data;
+  assert.equal(benefits.balance, 30000);
+  assert.equal(
+    benefits.ledger.filter((x) => x.kind === "refund" && x.order_id === second)
+      .length,
+    1,
+  );
+  assert.equal(
+    benefits.claims.find((c) => c.code === claim).status,
+    "available",
+  );
+  assert.equal(
+    (await request("/orders/" + second + "/tickets", { token: user })).data
+      .tickets[0].status,
+    "void",
+  );
+});
+test("场次独立、选座并发冲突以及不重叠租赁时段", async () => {
+  const rid = await reviewResource("show", 2),
+    body = {
+      resourceId: rid,
+      date: "2099-02-01",
+      quantity: 1,
+      sessionTime: "19:30",
+      seats: [1],
+    };
+  const results = await Promise.all([
+    request("/orders", { token: user, method: "POST", body }),
+    request("/orders", { token: user, method: "POST", body }),
+  ]);
+  assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
+  assert.equal(
+    (
+      await request("/orders", {
+        token: user,
+        method: "POST",
+        body: { ...body, sessionTime: "14:00" },
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (
+      await request(
+        `/availability?resourceId=${rid}&date=2099-02-01&sessionTime=19:30`,
+      )
+    ).data.available,
+    1,
+  );
+  assert.equal(
+    (
+      await request("/orders", {
+        token: user,
+        method: "POST",
+        body: { ...body, seats: [2, 2], quantity: 2 },
+      })
+    ).status,
+    400,
+  );
+  const venue = await reviewResource("venue");
+  await extensionOrder(venue, {
+    date: "2099-02-02",
+    startTime: "09:00",
+    endTime: "12:00",
+  });
+  assert.equal(
+    (
+      await request("/orders", {
+        token: user,
+        method: "POST",
+        body: {
+          resourceId: venue,
+          date: "2099-02-02",
+          startTime: "11:59",
+          endTime: "13:00",
+        },
+      })
+    ).status,
+    409,
+  );
+  assert.ok(
+    await extensionOrder(venue, {
+      date: "2099-02-02",
+      startTime: "12:00",
+      endTime: "14:00",
+    }),
+  );
+  assert.equal(
+    (
+      await request(
+        `/availability?resourceId=${venue}&date=2099-02-02&startTime=14:00&endTime=13:00`,
+      )
+    ).status,
+    400,
+  );
+});
+test("电子票幂等生成、一次核销、打印权限与已用票退款限制", async () => {
+  const rid = await reviewResource("show", 4),
+    id = await extensionOrder(rid, {
+      date: "2099-03-01",
+      quantity: 2,
+      sessionTime: "19:30",
+      seats: [1, 2],
+    });
+  await transition(id, "confirm", admin);
+  await transition(id, "pay");
+  const a = (
+      await request("/orders/" + id + "/tickets", {
+        token: user,
+        method: "POST",
+      })
+    ).data.tickets,
+    b = (
+      await request("/orders/" + id + "/tickets", {
+        token: user,
+        method: "POST",
+      })
+    ).data.tickets;
+  assert.equal(a.length, 2);
+  assert.equal(a[0].code, b[0].code);
+  assert.notEqual(a[0].code, a[1].code);
+  const other = (
+    await request("/login", {
+      method: "POST",
+      body: { username: "supplier", password: "demo123" },
+    })
+  ).data.token;
+  assert.equal(
+    (await request("/orders/" + id + "/tickets", { token: other })).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request("/demo/tickets/print", {
+        token: other,
+        method: "POST",
+        body: { codes: [a[0].code] },
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request("/demo/tickets/print", {
+        token: user,
+        method: "POST",
+        body: { codes: a.map((t) => t.code) },
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (
+      await request("/demo/tickets/verify", {
+        token: user,
+        method: "POST",
+        body: { code: a[0].code },
+      })
+    ).status,
+    403,
+  );
+  const results = await Promise.all(
+    [1, 2].map(() =>
+      request("/demo/tickets/verify", {
+        token: admin,
+        method: "POST",
+        body: { code: a[0].code },
+      }),
+    ),
+  );
+  assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
+  assert.equal((await transition(id, "refund")).status, 409);
+  assert.equal(
+    (
+      await request("/demo/tickets/verify", {
+        token: admin,
+        method: "POST",
+        body: { code: a[1].code },
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await request("/bootstrap", { token: user })).data.orders.find(
+      (o) => o.id === id,
+    ).status,
+    "completed",
+  );
+});
+test("营销复盘按券归因净额且退款剔除；渠道权重生效；自动快照幂等", async () => {
+  const campaign = await request("/demo/campaigns", {
+    token: admin,
+    method: "POST",
+    body: { name: "验收活动", budget: 10000, impressions: 100, clicks: 10 },
+  });
+  assert.equal(campaign.status, 200);
+  const template = await request("/demo/coupons", {
+    token: admin,
+    method: "POST",
+    body: {
+      name: "验收券",
+      amount: 1000,
+      minSpend: 10000,
+      validDays: 7,
+      campaignCode: campaign.data.code,
+    },
+  });
+  assert.equal(template.status, 200);
+  await request("/demo/coupons/claim", {
+    token: user,
+    method: "POST",
+    body: { code: template.data.code },
+  });
+  const claim = (await request("/benefits", { token: user })).data.claims.find(
+    (c) => c.coupon_code === template.data.code,
+  );
+  const id = await extensionOrder(await reviewResource("show", 2), {
+    couponClaim: claim.code,
+    date: "2099-04-01",
+  });
+  await transition(id, "confirm", admin);
+  await transition(id, "pay");
+  let report = (
+    await request("/demo/operations", { token: admin })
+  ).data.campaigns.find((c) => c.code === campaign.data.code);
+  assert.equal(report.revenue, 17000);
+  assert.equal(report.roas, 1.7);
+  assert.equal(report.conversion, 10);
+  await transition(id, "refund");
+  await transition(id, "approveRefund", admin);
+  report = (
+    await request("/demo/operations", { token: admin })
+  ).data.campaigns.find((c) => c.code === campaign.data.code);
+  assert.equal(report.revenue, 0);
+  const original = (await request("/bootstrap", { token: admin })).data.settings
+      .recommendationPolicies,
+    policies = {
+      H5: { interest: 0, view: 0, favorite: 0, purchase: 0, city: 0 },
+      电脑网页: { interest: 50, view: 0, favorite: 0, purchase: 0, city: 0 },
+    };
+  assert.equal(
+    (
+      await request("/demo/recommendation-policy", {
+        token: admin,
+        method: "PATCH",
+        body: { policies },
+      })
+    ).status,
+    200,
+  );
+  const h = (await request("/recommendations?channel=H5", { token: user })).data
+      .recommendations,
+    w = (
+      await request(
+        "/recommendations?channel=" + encodeURIComponent("电脑网页"),
+        { token: user },
+      )
+    ).data.recommendations;
+  assert.ok(h.every((r) => r.score === 0));
+  assert.ok(w.some((r) => r.score === 50));
+  await request("/demo/recommendation-policy", {
+    token: admin,
+    method: "PATCH",
+    body: { policies: original },
+  });
+  const first = await server.snapshotProfiles(),
+    second = await server.snapshotProfiles();
+  assert.equal(first.count, second.count);
+  assert.equal(first.date, second.date);
+  const uid = (await request("/bootstrap", { token: user })).data.user.id,
+    history = (await request("/profiles/" + uid + "/history", { token: admin }))
+      .data.snapshots;
+  assert.equal(history.filter((s) => s.date === first.date).length, 1);
+  assert.equal(
+    (await request("/demo/operations", { token: user })).status,
+    403,
+  );
+});

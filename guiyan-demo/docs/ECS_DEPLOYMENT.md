@@ -68,3 +68,10 @@ ls -lh /var/backups/guiyan
 本次从原Neon数据库复制模拟用户、资源、订单等业务记录，保留账号和密码散列；不复制登录会话，用户需重新登录。`import-snapshot.mjs`只允许写入空数据库，不覆盖已有数据。
 
 迁移完成后，阿里云数据库和原Vercel/Neon数据库各自独立，不自动同步。小组集中测试应统一使用同一套地址，避免在两个环境分别提交后误以为数据丢失。
+
+
+## 每日画像自动快照
+
+发布脚本安装并启动guiyan-snapshot.timer，每天北京时间00:10左右执行guiyan-snapshot.service；Persistent补跑停机错过的触发。首次发布立即运行一次，采用每用户每日一份upsert，不覆盖原订单数据。
+
+检查：systemctl status guiyan-snapshot.timer；systemctl list-timers guiyan-snapshot.timer；journalctl -u guiyan-snapshot.service -n 20。手动运行：systemctl start guiyan-snapshot.service。该任务与guiyan-backup.timer数据库备份独立，不可互相替代。后端读取/etc/guiyan/demo.env，勿将其内容写入报告或Git。

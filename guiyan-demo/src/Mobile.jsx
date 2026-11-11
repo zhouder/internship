@@ -37,10 +37,12 @@ import { Demands, MessageForm } from "./pages/Demands";
 import { Transactions } from "./pages/Transactions";
 import { AI } from "./pages/AI";
 import { Hero, Categories, Stories } from "./MarketComponents";
+import { Benefits } from "./Benefits";
 
 export function Profile({ onLogin, onNavigate }) {
   const { data, action, logout, busy } = useApp();
   const [edit, setEdit] = useState(false),
+    [benefits, setBenefits] = useState(false),
     [message, setMessage] = useState(false),
     [f, setF] = useState({
       name: data.user?.name || "",
@@ -63,6 +65,7 @@ export function Profile({ onLogin, onNavigate }) {
   const items = [
     ["我的订单", "orders", ClipboardList, data.orders.length],
     ["我的收藏", "favorites", Heart, data.favorites.length],
+    ["模拟钱包与优惠券", "benefits", CheckCircle, ""],
     [
       "消息与私信",
       "messages",
@@ -91,6 +94,7 @@ export function Profile({ onLogin, onNavigate }) {
             key={key}
             onClick={() => {
               if (key === "edit") setEdit(true);
+              else if (key === "benefits") setBenefits(true);
               else onNavigate(key);
             }}
           >
@@ -129,6 +133,11 @@ export function Profile({ onLogin, onNavigate }) {
         <ExternalLink size={13} />
       </a>
       {message ? <MessageForm onClose={() => setMessage(false)} /> : null}
+      {benefits ? (
+        <Modal title="模拟钱包与优惠券" onClose={() => setBenefits(false)} wide>
+          <Benefits />
+        </Modal>
+      ) : null}
       {edit ? (
         <Modal title="个人资料与偏好" onClose={() => setEdit(false)}>
           <form

@@ -1,0 +1,15 @@
+[Unit]
+Description=Guiyan daily profile snapshots
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=guiyan
+Group=guiyan
+WorkingDirectory=/opt/guiyan/current
+EnvironmentFile=/etc/guiyan/demo.env
+ExecStart=/usr/local/bin/node scripts/snapshot-profiles.mjs
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true

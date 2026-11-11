@@ -1,3 +1,4 @@
+import { extensionSchema } from "./extension-schema.mjs";
 export const schema = `
 CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL, name TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'user', city TEXT, age INTEGER, gender TEXT, channel TEXT, preference TEXT, verified INTEGER DEFAULT 0, created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id), expires_at TEXT NOT NULL);
@@ -14,4 +15,5 @@ CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, username TEXT UNIQUE NO
     CREATE INDEX IF NOT EXISTS idx_order_user ON orders(user_id);
     CREATE INDEX IF NOT EXISTS idx_comments_resource ON comments(resource_id,status);
     CREATE TABLE IF NOT EXISTS profile_snapshots(user_id INTEGER REFERENCES users(id), snapshot_date TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY(user_id,snapshot_date));
+${extensionSchema}
 `;

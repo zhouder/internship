@@ -1,4 +1,5 @@
 import { resourceArtwork } from "./resource-artwork.mjs";
+import { extensionColumns } from "./extension-schema.mjs";
 export const datedCategories = [
   "show",
   "heritage",
@@ -16,6 +17,7 @@ export const inventoryMode = (r) =>
         : "global";
 export const upgradeColumns = {
   orders: {
+    ...extensionColumns.orders,
     paid_at: "TEXT",
     refunded_at: "TEXT",
     refund_decision: "TEXT DEFAULT ''",

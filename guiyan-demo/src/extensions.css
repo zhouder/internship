@@ -1,0 +1,192 @@
+.extension-stack {
+  display: grid;
+  gap: 20px;
+}
+.extension-card {
+  border: 1px solid #e6e2dc;
+  border-radius: 14px;
+  padding: 22px;
+  background: #fff;
+  min-width: 0;
+}
+.extension-card h2,
+.extension-card h3,
+.extension-card h4 {
+  margin: 0 0 12px;
+}
+.extension-inline {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.extension-inline label {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+  min-width: 160px;
+}
+.extension-inline input,
+.weight-fields input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+.extension-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.extension-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #eee;
+  padding: 12px 0;
+}
+.extension-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+}
+.verification-result {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #f7f5f2;
+  border-radius: 8px;
+  padding: 14px;
+}
+.extension-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.extension-scroll table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+}
+.extension-scroll td,
+.extension-scroll th {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+.weight-fields {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  border: 1px solid #e6e2dc;
+  border-radius: 10px;
+  padding: 16px;
+}
+.weight-fields label {
+  display: grid;
+  gap: 8px;
+}
+.demo-ticket {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border: 1px dashed #c2aaa0;
+  border-radius: 12px;
+  padding: 22px;
+  background: #fffaf6;
+}
+.demo-ticket h3 {
+  margin: 10px 0;
+}
+.demo-ticket code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.demo-ticket img {
+  flex: none;
+}
+.demo-ticket > div {
+  min-width: 0;
+}
+.ticket-print-sheet {
+  display: none;
+}
+.booking-seats {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 5px;
+}
+.booking-seats button {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 8px 0;
+  background: white;
+  font-size: 12px;
+}
+.booking-seats button.selected {
+  background: #b9452a;
+  color: #fff;
+  border-color: #b9452a;
+}
+.booking-seats button:disabled {
+  background: #eee;
+  color: #aaa;
+  cursor: not-allowed;
+}
+.seat-legend {
+  font-size: 12px;
+  color: #777;
+}
+.benefits {
+  padding: 4px;
+}
+.benefits h3 strong {
+  color: #b9452a;
+}
+.benefits .extension-grid {
+  gap: 12px;
+}
+.benefits .extension-card {
+  padding: 16px;
+}
+@media (max-width: 700px) {
+  .extension-grid {
+    grid-template-columns: 1fr;
+  }
+  .extension-card {
+    padding: 16px;
+  }
+  .weight-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .demo-ticket {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .demo-ticket img {
+    align-self: center;
+  }
+  .extension-scroll .text-button {
+    font-size: 12px;
+  }
+  .booking-seats button {
+    padding: 10px 0;
+  }
+}
+@media print {
+  body > * {
+    display: none !important;
+  }
+  body > .ticket-print-sheet {
+    display: block !important;
+  }
+  .ticket-print-sheet .demo-ticket {
+    break-inside: avoid;
+    margin: 12mm;
+    flex-direction: row;
+    color: #000;
+  }
+  .ticket-print-sheet .note {
+    font-size: 10pt;
+  }
+}
