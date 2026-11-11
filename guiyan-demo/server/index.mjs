@@ -99,7 +99,7 @@ export async function createApp({
       ...(isAdmin(user) ? [] : [user?.id || 0]),
     );
   }
-  const { profileRows, analysis, recommendations } = createInsights({
+  const { profileRows, analysis, recommendations, ownProfile } = createInsights({
     all,
     get,
     orderRows,
@@ -380,6 +380,8 @@ export async function createApp({
             : [],
           members: session ? await all("SELECT id,name FROM users") : [],
           profiles: isAdmin(session) ? await profileRows() : [],
+          ownProfile:
+            session && !isAdmin(session) ? await ownProfile(session) : null,
           moderatedMessages: isAdmin(session)
             ? await all(
                 "SELECT m.*,u.name AS user_name,s.name AS sender_name FROM messages m LEFT JOIN users u ON u.id=m.user_id LEFT JOIN users s ON s.id=m.sender_id WHERE m.kind='private' ORDER BY m.id DESC LIMIT 100",

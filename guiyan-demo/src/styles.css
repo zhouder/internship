@@ -1972,6 +1972,42 @@ td.order-code {
   margin-left: auto;
   font-size: 10px;
 }
+.profile-insight {
+  padding: 16px 20px 18px;
+  background: #ffffff;
+  border-bottom: 7px solid #f5f7fa;
+}
+.profile-insight h3 {
+  font-size: 14px;
+  margin: 0 0 10px;
+}
+.profile-insight .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.profile-insight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  margin: 0;
+}
+.profile-insight-grid dt {
+  font-size: 11px;
+  color: #7b9289;
+}
+.profile-insight-grid dd {
+  font-size: 13px;
+  margin: 3px 0 0;
+  font-weight: 500;
+}
+.profile-insight-note {
+  display: block;
+  margin-top: 12px;
+  font-size: 11px;
+  color: #7b9289;
+}
 .profile-menu {
   padding: 6px 18px;
   margin-bottom: 20px;

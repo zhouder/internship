@@ -19,7 +19,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useApp } from "./state";
-import { api } from "./api";
+import { api, money } from "./api";
 import { matchesSearch, rankRecommendations } from "./search";
 import { LoginModal } from "./Login";
 import {
@@ -85,6 +85,43 @@ export function Profile({ onLogin, onNavigate }) {
         </div>
         <Badge>{data.user.verified ? "演示已认证" : "未认证"}</Badge>
       </div>
+      {data.ownProfile ? (
+        <section className="profile-insight" aria-label="我的画像">
+          <h3>我的画像</h3>
+          <div className="tags">
+            {data.ownProfile.tags.map((t) => (
+              <Badge key={t}>{t}</Badge>
+            ))}
+          </div>
+          <dl className="profile-insight-grid">
+            <div>
+              <dt>消费能力</dt>
+              <dd>
+                {money(data.ownProfile.spent)} /{" "}
+                {data.ownProfile.paid_count} 笔
+              </dd>
+            </div>
+            <div>
+              <dt>票价偏好</dt>
+              <dd>{data.ownProfile.portrait.priceBand}</dd>
+            </div>
+            <div>
+              <dt>站内互动</dt>
+              <dd>
+                收藏 {data.ownProfile.favorite_count} · 浏览{" "}
+                {data.ownProfile.view_count}
+              </dd>
+            </div>
+            <div>
+              <dt>复购情况</dt>
+              <dd>{data.ownProfile.portrait.repeat}</dd>
+            </div>
+          </dl>
+          <small className="profile-insight-note">
+            标签由系统按你的消费与浏览行为自动计算；首页「为你推荐」据此排序。
+          </small>
+        </section>
+      ) : null}
       <div className="profile-menu">
         {items.map(([label, key, I, count]) => (
           <button
