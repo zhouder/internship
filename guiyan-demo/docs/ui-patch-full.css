@@ -1,0 +1,433 @@
+/* ============================================
+   全面UI优化补丁 - H5/Web/管理后台
+   ============================================ */
+
+/* 1. 修复侧边栏遮挡问题 */
+.sidebar {
+  z-index: 40;
+  overflow-y: auto;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 20px 25px 30px; /* 增加底部内边距，避免被遮挡 */
+  font-size: 11px;
+  color: #97a9bc;
+}
+
+/* 2. 下拉选择框动画优化 */
+select {
+  cursor: pointer;
+  min-height: 40px;
+  border: 1px solid #dbe2eb;
+  border-radius: 10px;
+  background: white;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23778397' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+select:hover {
+  border-color: #176b5b;
+  box-shadow: 0 2px 8px rgba(23, 107, 91, 0.1);
+}
+
+select:focus {
+  outline: none;
+  border-color: #176b5b;
+  box-shadow: 0 0 0 3px rgba(23, 107, 91, 0.1);
+}
+
+/* 下拉选项样式 */
+select option {
+  padding: 10px;
+  background: white;
+  color: #17263c;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background: linear-gradient(135deg, #eef9f5 0%, #e6f7f1 100%);
+  color: #176b5b;
+  font-weight: 500;
+}
+
+/* 3. H5移动端优化 */
+
+/* H5顶部导航优化 */
+.mobile-header {
+  background: linear-gradient(135deg, #176b5b 0%, #0d8f7a 100%);
+  box-shadow: 0 2px 12px rgba(23, 107, 91, 0.15);
+  padding: 20px 18px 16px;
+}
+
+.mobile-brand {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* H5搜索框优化 */
+.mobile-header .search-box {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.mobile-header .search-box:focus-within {
+  background: white;
+  box-shadow: 0 4px 16px rgba(23, 107, 91, 0.15);
+  transform: translateY(-1px);
+}
+
+/* H5分类图标优化 */
+.mobile-categories > button {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-categories > button:active {
+  transform: scale(0.95);
+}
+
+.mobile-categories > button > span {
+  background: linear-gradient(135deg, #edf8f5 0%, #dff7ed 100%);
+  box-shadow: 0 2px 6px rgba(23, 107, 91, 0.08);
+  transition: all 0.25s ease;
+}
+
+.mobile-categories > button:active > span {
+  box-shadow: 0 4px 12px rgba(23, 107, 91, 0.15);
+  transform: translateY(-2px);
+}
+
+/* H5资源卡片优化 */
+.mobile-shell .resource-card {
+  background: white;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(29, 29, 31, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-shell .resource-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 16px rgba(29, 29, 31, 0.1);
+}
+
+.mobile-shell .resource-image {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* H5底部导航优化 */
+.mobile-nav {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+  border-top: 1px solid rgba(233, 237, 242, 0.8);
+}
+
+.mobile-nav > button {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.mobile-nav > button:active {
+  transform: scale(0.95);
+}
+
+.mobile-nav > button.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  background: linear-gradient(90deg, #176b5b 0%, #0d8f7a 100%);
+  border-radius: 0 0 3px 3px;
+  animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* 4. Web端（桌面网页）优化 */
+
+/* Web端英雄区优化 */
+.mobile-hero {
+  position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-hero > img {
+  transition: transform 0.5s ease;
+}
+
+.mobile-hero:hover > img {
+  transform: scale(1.02);
+}
+
+.mobile-hero > h1,
+.mobile-hero > button {
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.mobile-hero > button:hover {
+  transform: translateX(3px);
+}
+
+/* Web端资源卡片（桌面视图下） */
+@media (min-width: 641px) {
+  .resource-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .resource-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(29, 29, 31, 0.12);
+    border-color: #d9dde2;
+  }
+
+  .resource-image:hover img {
+    transform: scale(1.08);
+  }
+}
+
+/* 5. 通用表单优化 */
+
+/* 输入框焦点效果增强 */
+input:focus,
+textarea:focus {
+  border-color: #176b5b;
+  box-shadow: 0 0 0 3px rgba(23, 107, 91, 0.1);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: #a8bfb9;
+}
+
+/* 6. 按钮统一优化 */
+
+.button {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.button.primary {
+  background: linear-gradient(135deg, #176b5b 0%, #125949 100%);
+  box-shadow: 0 2px 8px rgba(23, 107, 91, 0.25);
+}
+
+.button.primary:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(23, 107, 91, 0.35);
+}
+
+.button.small {
+  border-radius: 8px;
+}
+
+/* 7. 卡片通用优化（适用于所有端） */
+
+.panel,
+.resource-card,
+.order-card,
+.demand-card,
+.kpi {
+  box-shadow: 0 2px 8px rgba(29, 29, 31, 0.06), 0 1px 3px rgba(29, 29, 31, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (hover: hover) {
+  .panel:hover,
+  .resource-card:hover,
+  .order-card:hover,
+  .demand-card:hover,
+  .kpi:hover {
+    box-shadow: 0 8px 24px rgba(29, 29, 31, 0.1), 0 2px 8px rgba(29, 29, 31, 0.06);
+    transform: translateY(-2px);
+  }
+}
+
+/* 8. Toast通知优化（全端统一） */
+
+.toast {
+  background: rgba(29, 29, 31, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 24px 64px rgba(29, 29, 31, 0.2), 0 8px 20px rgba(29, 29, 31, 0.12);
+  border-radius: 12px;
+  animation: slideUpToast 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpToast {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* 9. 模态框优化（全端统一） */
+
+.modal-backdrop {
+  backdrop-filter: blur(8px);
+  animation: fadeInBackdrop 0.3s ease;
+}
+
+@keyframes fadeInBackdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  animation: scaleInModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 24px 64px rgba(29, 29, 31, 0.16), 0 8px 20px rgba(29, 29, 31, 0.08);
+}
+
+@keyframes scaleInModal {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 10. 空状态优化 */
+
+.empty {
+  animation: fadeInEmpty 0.5s ease;
+}
+
+@keyframes fadeInEmpty {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 11. 加载骨架屏（全端统一） */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #fafafb 25%,
+    #f0f0f2 50%,
+    #fafafb 75%
+  );
+  background-size: 200% 100%;
+  animation: loadingSkeleton 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes loadingSkeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 12. 移动端特殊优化 */
+
+@media (max-width: 640px) {
+  /* 确保按钮触摸目标足够大 */
+  .button {
+    min-height: 44px;
+  }
+
+  /* 移动端触摸反馈 */
+  @media (hover: none) {
+    .button:active:not(:disabled) {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    .resource-card:active {
+      transform: scale(0.99);
+    }
+
+    .mobile-categories > button:active > span {
+      transform: scale(0.95);
+    }
+  }
+
+  /* 移动端侧边栏优化 */
+  .sidebar.open {
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* 13. 响应式优化 - 确保所有端适配 */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* 平板优化 */
+  .resource-card {
+    transition: all 0.25s ease;
+  }
+}
+
+/* 14. 性能优化 - 减少动画消耗 */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 15. 深色模式支持（可选，为未来准备） */
+
+@media (prefers-color-scheme: dark) {
+  /* 暂时不启用，保持现有设计 */
+}

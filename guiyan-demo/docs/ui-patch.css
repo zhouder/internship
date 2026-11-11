@@ -1,0 +1,141 @@
+/* ============================================
+   UI优化补丁 - 在现有styles.css末尾添加
+   ============================================ */
+
+/* 1. 统一主色调 */
+:root {
+  --green: #176b5b;
+  --green-hover: #125949;
+}
+
+/* 2. 增强卡片阴影 */
+.panel, .resource-card, .order-card, .demand-card {
+  box-shadow: 0 2px 8px rgba(29, 29, 31, 0.06), 0 1px 3px rgba(29, 29, 31, 0.04);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.panel:hover, .resource-card:hover, .demand-card:hover {
+  box-shadow: 0 8px 24px rgba(29, 29, 31, 0.08), 0 2px 8px rgba(29, 29, 31, 0.04);
+  transform: translateY(-2px);
+}
+
+/* 3. 优化按钮反馈 */
+.button.primary {
+  box-shadow: 0 2px 8px rgba(23, 107, 91, 0.2);
+  transition: all 0.2s ease;
+}
+
+.button.primary:hover {
+  box-shadow: 0 4px 16px rgba(23, 107, 91, 0.28);
+  transform: translateY(-1px);
+}
+
+.button.primary:active {
+  transform: translateY(0);
+}
+
+/* 4. 美化Toast通知 */
+.toast {
+  background: rgba(29, 29, 31, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 24px 64px rgba(29, 29, 31, 0.16), 0 8px 20px rgba(29, 29, 31, 0.08);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* 5. KPI卡片视觉增强 */
+.kpi {
+  box-shadow: 0 2px 8px rgba(29, 29, 31, 0.06);
+  transition: all 0.25s ease;
+}
+
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(29, 29, 31, 0.08);
+}
+
+.kpi strong {
+  background: linear-gradient(135deg, #176b5b 0%, #0d8f7a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 6. 移动端触摸优化 */
+@media (max-width: 640px) and (hover: none) {
+  .button:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  .resource-card:active {
+    transform: scale(0.99);
+  }
+}
+
+/* 7. 表单焦点增强 */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #176b5b;
+  box-shadow: 0 0 0 3px rgba(23, 107, 91, 0.1);
+}
+
+/* 8. 模态框动画 */
+.modal-backdrop {
+  animation: fadeIn 0.3s ease;
+}
+
+.modal {
+  animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 9. 加载骨架屏 */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #fafafb 25%,
+    #f0f0f2 50%,
+    #fafafb 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 10. 无障碍增强 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
