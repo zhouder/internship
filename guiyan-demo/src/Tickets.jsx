@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { api, shortDate } from "./api";
 import { useApp } from "./state";
 import { Modal } from "./ui";
-import { printTickets } from "./ticket-print";
-const names = { active: "待核销", used: "已核销", void: "已作废" };
+import { printTickets, ticketLabel } from "./ticket-print";
 function Ticket({ ticket: t, qr }) {
   return (
     <article className="demo-ticket">
@@ -15,7 +14,7 @@ function Ticket({ ticket: t, qr }) {
           {t.booking_date} · {t.session_time} · {t.seat_label}
         </p>
         <p>
-          {names[t.status]}
+          {ticketLabel(t)}
           {t.verified_at ? " · " + shortDate(t.verified_at) : ""}
         </p>
         <code>{t.code}</code>
@@ -28,23 +27,25 @@ function Ticket({ ticket: t, qr }) {
   );
 }
 export function Tickets({ order, onClose }) {
-  const { setToast } = useApp(),
+  const { data, setToast } = useApp(),
     [tickets, setTickets] = useState([]),
     [qrs, setQrs] = useState({}),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [printing, setPrinting] = useState(false);
   const printLock = useRef(false);
-  async function load(issue = false) {
-    setLoading(true);
-    setError("");
-    try {
-      const r = await api("/orders/" + order.id + "/tickets", {
-        method: issue ? "POST" : "GET",
-      });
-      setTickets(r.tickets);
-      setQrs(
-        Object.fromEntries(
+  const loadSequence = useRef(0);
+  const canIssue = order.status === "paid" && order.booking_date >= data.today;
+  const load = useCallback(
+    async (issue = false) => {
+      const sequence = ++loadSequence.current;
+      setLoading(true);
+      setError("");
+      try {
+        const r = await api("/orders/" + order.id + "/tickets", {
+          method: issue ? "POST" : "GET",
+        });
+        const nextQrs = Object.fromEntries(
           await Promise.all(
             r.tickets.map(async (t) => [
               t.code,
@@ -55,17 +56,24 @@ export function Tickets({ order, onClose }) {
               }),
             ]),
           ),
-        ),
-      );
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
+        );
+        if (sequence !== loadSequence.current) return;
+        setTickets(r.tickets);
+        setQrs(nextQrs);
+      } catch (e) {
+        if (sequence === loadSequence.current) setError(e.message);
+      } finally {
+        if (sequence === loadSequence.current) setLoading(false);
+      }
+    },
+    [order.id],
+  );
   useEffect(() => {
     load();
-  }, [order.id]);
+    return () => {
+      loadSequence.current++;
+    };
+  }, [load, order.status]);
   async function print(rows) {
     if (printLock.current) return;
     printLock.current = true;
@@ -86,17 +94,47 @@ export function Tickets({ order, onClose }) {
   return (
     <>
       <Modal title="电子票与自助打印（模拟）" onClose={onClose} wide>
-        <div className="extension-stack">
+        <div
+          className="extension-stack ticket-dialog-body"
+          style={{ "--ticket-count": Math.min(order.quantity || 1, 3) }}
+        >
           <p className="note">
             二维码只包含随机票码。打印日志记录的是请求；可在浏览器选择打印或保存PDF。
           </p>
-          {loading ? <p>正在读取电子票…</p> : null}
+          {loading && !tickets.length ? (
+            <div className="ticket-loading" role="status">
+              <span>正在读取电子票与二维码…</span>
+              <div className="ticket-loading-card" />
+              {order.quantity > 1 ? (
+                <div className="ticket-loading-card" />
+              ) : null}
+            </div>
+          ) : null}
           {error ? <p role="alert">{error}</p> : null}
-          {!loading && !tickets.length && order.status === "paid" ? (
+          {!loading && !tickets.length && canIssue ? (
             <button className="button primary" onClick={() => load(true)}>
               生成演示电子票
             </button>
           ) : null}
+          {!loading && !error && !tickets.length && !canIssue ? (
+            <p className="note">
+              该订单没有电子票；历史已过期、已退款或已结束的订单不再补发新票。
+            </p>
+          ) : null}
+          <div className="ticket-dialog-tools">
+            <button
+              className="button small"
+              disabled={loading || printing}
+              onClick={() => load()}
+            >
+              刷新票据
+            </button>
+            {loading && tickets.length ? (
+              <span className="muted" role="status">
+                正在更新票状态…
+              </span>
+            ) : null}
+          </div>
           {tickets.length ? (
             <button
               className="button primary"

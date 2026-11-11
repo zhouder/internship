@@ -69,9 +69,9 @@
   z-index: 10000;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 6px;
+  padding: 4px;
   border: 1px solid #e9e3dd;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #fff;
   box-shadow:
     0 12px 36px #33261924,
@@ -88,8 +88,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 40px;
-  padding: 9px 12px;
+  min-height: 34px;
+  padding: 6px 10px;
   border-radius: 7px;
   cursor: pointer;
   user-select: none;
@@ -190,5 +190,29 @@
   }
   .weight-fields .smart-select {
     min-width: 0;
+  }
+}
+
+.smart-select-menu.compact {
+  padding: 4px;
+  box-shadow: 0 6px 20px #3326191c;
+  line-height: 20px;
+}
+.smart-select-menu.compact .smart-select-option {
+  min-height: 32px;
+  padding: 5px 8px;
+  gap: 12px;
+  border-radius: 4px;
+}
+.smart-select.compact .smart-select-trigger {
+  min-height: 32px;
+  padding: 5px 7px;
+  font-size: 15px;
+  gap: 8px;
+  border-radius: 7px;
+}
+@media (pointer: coarse) {
+  .smart-select-menu.compact .smart-select-option {
+    min-height: 40px;
   }
 }

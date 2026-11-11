@@ -1,5 +1,6 @@
+import { marketCities } from "../market-cities";
 import { Select } from "../Select";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus,
   Heart,
@@ -200,7 +201,7 @@ export function Resources({
           onChange={(e) => setCity(e.target.value)}
         >
           <option value="">全部城市</option>
-          {["南宁", "柳州", "桂林", "北海", "崇左", "全区"].map((c) => (
+          {marketCities(data.resources, data.user?.city).map((c) => (
             <option key={c}>{c}</option>
           ))}
         </Select>
@@ -377,12 +378,17 @@ export function ResourceDetail({
     [inventoryLoading, setInventoryLoading] = useState(true),
     [inventoryError, setInventoryError] = useState("");
   const stableClose = useCallback(onClose, [onClose]);
+  const availabilityKey = useRef("");
   useEffect(() => {
     api("/resources/" + r.id + "/view", { method: "POST" }).catch(() => {});
   }, [r.id]);
   useEffect(() => {
     let active = true;
-    setInventoryLoading(true);
+    const key = [r.id, date, sessionTime, startTime, endTime].join("|");
+    if (availabilityKey.current !== key) {
+      availabilityKey.current = key;
+      setInventoryLoading(true);
+    }
     setInventoryError("");
     api(
       "/availability?" +
@@ -423,9 +429,17 @@ export function ResourceDetail({
     setSeats([]);
   }, [date, sessionTime]);
   useEffect(() => {
-    setCouponClaim("");
-  }, [qty]);
+    if (!couponClaim) return;
+    const claim = data.benefits?.claims.find((c) => c.code === couponClaim);
+    if (
+      !claim ||
+      claim.status !== "available" ||
+      claim.min_spend > r.price * Number(qty)
+    )
+      setCouponClaim("");
+  }, [qty, couponClaim, data.benefits, r.price]);
   const rental = ["venue", "equipment"].includes(r.category),
+    seatConflict = seats.some((n) => occupied.includes(n)),
     favorite = data.favorites.includes(r.id),
     comments = data.comments.filter(
       (c) => c.resource_id === r.id && c.status === "approved",
@@ -739,8 +753,17 @@ export function ResourceDetail({
                       type="button"
                       aria-label={`座位${n}`}
                       aria-pressed={seats.includes(n)}
-                      disabled={inventoryLoading || occupied.includes(n)}
-                      className={seats.includes(n) ? "selected" : ""}
+                      disabled={
+                        inventoryLoading ||
+                        (occupied.includes(n) && !seats.includes(n))
+                      }
+                      className={
+                        seats.includes(n)
+                          ? occupied.includes(n)
+                            ? "selected conflict"
+                            : "selected"
+                          : ""
+                      }
                       onClick={() => {
                         const next = seats.includes(n)
                           ? seats.filter((x) => x !== n)
@@ -753,6 +776,11 @@ export function ResourceDetail({
                     </button>
                   ))}
                 </div>
+                {seatConflict ? (
+                  <p className="stock-warning" role="alert">
+                    所选座位已被其他预约占用，请点击红色冲突座位取消选择，再重新选座。
+                  </p>
+                ) : null}
                 <p className="seat-legend">
                   红色已选 ·
                   灰色已占用。仅展示前60席；不选座时由系统模拟配票。座位仅在提交成功后占用。
@@ -825,7 +853,11 @@ export function ResourceDetail({
           <SubmitButton
             busy={busy}
             disabled={
-              busy || inventoryLoading || !!inventoryError || remaining === 0
+              busy ||
+              inventoryLoading ||
+              !!inventoryError ||
+              remaining === 0 ||
+              seatConflict
             }
           >
             提交预约

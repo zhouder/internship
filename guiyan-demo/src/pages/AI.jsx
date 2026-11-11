@@ -5,7 +5,8 @@ import { api } from "../api";
 import { PageTitle, Badge, Panel } from "../ui";
 export function AI({ mobile = false }) {
   const { data, setToast } = useApp();
-  const [kind, setKind] = useState(mobile ? "support" : "operator"),
+  const operator = data.user?.role === "admin";
+  const [kind, setKind] = useState(operator ? "operator" : "support"),
     [input, setInput] = useState(""),
     [loading, setLoading] = useState(false),
     [histories, setHistories] = useState({
@@ -51,11 +52,13 @@ export function AI({ mobile = false }) {
   return (
     <>
       <PageTitle
-        title={mobile ? "智能客服" : "AI工作台"}
-        subtitle="运营问数、咨询解答与宣传文案"
+        title={operator ? "AI工作台" : "智能客服"}
+        subtitle={
+          operator ? "运营问数、咨询解答与宣传文案" : "咨询解答与宣传文案"
+        }
       />
       <div className="category-tabs">
-        {(mobile
+        {(!operator
           ? [
               ["support", "智能客服"],
               ["copy", "文案生成"],

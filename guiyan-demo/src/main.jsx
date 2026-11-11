@@ -9,6 +9,7 @@ import "./review.css";
 import "./extensions.css";
 import "./performance.css";
 import "./select.css";
+import "./stability.css";
 
 // 启动性能监控
 if (import.meta.env.PROD) {

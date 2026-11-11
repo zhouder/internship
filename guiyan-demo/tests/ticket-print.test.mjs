@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ticketPrintDocument } from "../src/ticket-print.js";
+import { ticketPrintDocument, ticketLabel } from "../src/ticket-print.js";
 const ticket = {
   code: "GYT123",
   resource_name: "演出 <img src=x onerror=alert(1)>",
@@ -10,6 +10,29 @@ const ticket = {
   status: "active",
 };
 const qr = "data:image/png;base64,aGVsbG8=";
+test("电子票显示区分过期、售后和已核销，不能把历史票显示成有效待核销", () => {
+  const current = { ...ticket, status: "active", order_status: "paid" };
+  assert.equal(ticketLabel(current, "2026-11-11"), "待核销");
+  assert.equal(
+    ticketLabel({ ...current, booking_date: "2026-11-10" }, "2026-11-11"),
+    "已过期",
+  );
+  assert.equal(
+    ticketLabel({ ...current, order_status: "refund_requested" }, "2026-11-11"),
+    "售后处理中，暂不可核销",
+  );
+  assert.equal(
+    ticketLabel({ ...current, order_status: "refunded" }, "2026-11-11"),
+    "已作废",
+  );
+  assert.equal(
+    ticketLabel(
+      { ...current, status: "used", booking_date: "2026-11-10" },
+      "2026-11-11",
+    ),
+    "已核销",
+  );
+});
 test("打印文档仅包含所选票据，转义业务文字并限制二维码来源", () => {
   const html = ticketPrintDocument(
     [ticket, { ...ticket, code: "GYT456", seat_label: "1排2座" }],

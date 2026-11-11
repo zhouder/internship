@@ -47,6 +47,7 @@ export function Select({
   disabled,
   className = "",
   id,
+  compact = false,
   ...props
 }) {
   const options = readOptions(children),
@@ -97,12 +98,18 @@ export function Select({
         setOpen(false);
         return;
       }
-      const height = Math.min(312, Math.max(56, options.length * 42 + 12)),
+      const height = Math.min(
+        compact ? 280 : 300,
+          Math.max(44, options.length * (compact ? 32 : 36) + 8),
+        ),
         below = innerHeight - r.bottom - 12,
         above = r.top - 12,
         up = below < height && above > below,
         maxHeight = Math.max(40, Math.min(height, up ? above : below)),
-        width = Math.min(Math.max(r.width, 184), innerWidth - 24);
+        width = Math.min(
+          Math.max(r.width, compact ? 112 : 144),
+          innerWidth - 24,
+        );
       setPosition({
         position: "fixed",
         left: Math.max(12, Math.min(r.left, innerWidth - width - 12)),
@@ -118,7 +125,7 @@ export function Select({
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [open, options.length]);
+  }, [open, options.length, compact]);
   useEffect(() => {
     if (!open) return;
     const outside = (e) => {
@@ -146,6 +153,14 @@ export function Select({
     if (disabled) setOpen(false);
   }, [disabled]);
   function keydown(e) {
+    if (e.key === "Escape") {
+      if (open) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+      }
+      return;
+    }
     if (
       ["ArrowDown", "ArrowUp", "Home", "End", "Enter", " ", "Escape"].includes(
         e.key,
@@ -153,10 +168,6 @@ export function Select({
     ) {
       e.preventDefault();
       e.stopPropagation();
-      if (e.key === "Escape") {
-        setOpen(false);
-        return;
-      }
       if (e.key === "Enter" || e.key === " ") {
         if (open) choose(active);
         else show();
@@ -203,7 +214,7 @@ export function Select({
     }
   }
   return (
-    <div className={"smart-select " + className}>
+    <div className={"smart-select " + (compact ? "compact " : "") + className}>
       <button
         {...props}
         id={id}
@@ -260,7 +271,7 @@ export function Select({
               id={listId}
               role="listbox"
               aria-label={props["aria-label"] || "选项"}
-              className="smart-select-menu"
+              className={"smart-select-menu" + (compact ? " compact" : "")}
               style={position}
             >
               {options.map((o, i) => (

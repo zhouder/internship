@@ -26,20 +26,65 @@ export function tokenKey() {
     ? "guiyan.admin.v1"
     : "guiyan.user.v1";
 }
-export async function api(path, { method = "GET", body } = {}) {
-  const token = localStorage.getItem(tokenKey());
-  const response = await fetch("/api" + path, {
-    method,
-    headers: {
-      "X-Guiyan-Channel": location.pathname.startsWith("/h5") ? "H5" : "web",
-      ...(body ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "请求失败");
-  return data;
+export async function api(
+  path,
+  { method = "GET", body, signal, timeoutMs = 60000 } = {},
+) {
+  const key = tokenKey(),
+    token = localStorage.getItem(key),
+    controller = new AbortController();
+  const abort = () => controller.abort(signal?.reason);
+  if (signal?.aborted) abort();
+  else signal?.addEventListener("abort", abort, { once: true });
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch("/api" + path, {
+      method,
+      headers: {
+        "X-Guiyan-Channel": location.pathname.startsWith("/h5") ? "H5" : "web",
+        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw Object.assign(new Error("服务返回异常，请刷新页面核对结果后再试"), {
+        status: response.status >= 400 ? response.status : 502,
+      });
+    }
+    if (!response.ok) {
+      if (
+        response.status === 401 &&
+        path !== "/login" &&
+        token &&
+        localStorage.getItem(key) === token
+      ) {
+        localStorage.removeItem(key);
+        window.dispatchEvent(new Event("guiyan:session-expired"));
+      }
+      throw Object.assign(
+        new Error(
+          data.error || `服务暂时不可用（${response.status}），请稍后重试`,
+        ),
+        { status: response.status },
+      );
+    }
+    return data;
+  } catch (e) {
+    if (signal?.aborted) throw e;
+    if (controller.signal.aborted)
+      throw new Error("请求超时，请刷新核对操作结果后再试");
+    if (e instanceof TypeError)
+      throw new Error("无法连接服务，请检查网络后重试");
+    throw e;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", abort);
+  }
 }
 export async function exportOrders() {
   const response = await fetch("/api/export", {

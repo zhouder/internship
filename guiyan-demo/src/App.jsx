@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useHashPage } from "./useHashPage";
 import {
   Home,
   BarChart3,
@@ -44,18 +45,16 @@ const nav = [
 ];
 function Admin({ onOpen }) {
   const { data, logout } = useApp();
-  const [page, setPage] = useState(
-      nav.some(([k]) => k === location.hash.slice(1))
-        ? location.hash.slice(1)
-        : "overview",
-    ),
-    [query, setQuery] = useState(""),
+  const [page, setPage] = useHashPage(
+    nav.map(([key]) => key),
+    "overview",
+  );
+  const [query, setQuery] = useState(""),
     [messages, setMessages] = useState(false),
     [menu, setMenu] = useState(false),
     [account, setAccount] = useState(false);
   function navigate(key) {
     setPage(key);
-    location.hash = key;
     setMenu(false);
     window.scrollTo({ top: 0 });
   }

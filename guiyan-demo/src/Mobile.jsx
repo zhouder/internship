@@ -1,5 +1,7 @@
+import { marketCities } from "./market-cities";
 import { Select } from "./Select";
 import { useState } from "react";
+import { useHashPage, userPages, privatePages } from "./useHashPage";
 import {
   Home,
   Layers,
@@ -167,7 +169,7 @@ export function Profile({ onLogin, onNavigate }) {
                 value={f.city}
                 onChange={(e) => setF((x) => ({ ...x, city: e.target.value }))}
               >
-                {["南宁", "柳州", "桂林", "北海"].map((c) => (
+                {marketCities(data.resources, data.user?.city).map((c) => (
                   <option key={c}>{c}</option>
                 ))}
               </Select>
@@ -197,8 +199,12 @@ export { Messages } from "./Messages";
 import { Messages } from "./Messages";
 export function Mobile({ onOpen }) {
   const { data, action, setToast } = useApp();
-  const [page, setPage] = useState("home"),
-    [category, setCategory] = useState(""),
+  const [route, setPage] = useHashPage(
+    userPages.filter((p) => p !== "topics"),
+    "home",
+  );
+  const page = !data.user && privatePages.includes(route) ? "profile" : route;
+  const [category, setCategory] = useState(""),
     [query, setQuery] = useState(""),
     [city, setCity] = useState(""),
     [sort, setSort] = useState("default"),
@@ -265,6 +271,7 @@ export function Mobile({ onOpen }) {
             <label className="city-button">
               <Select
                 aria-label="所在城市"
+                compact
                 value={city}
                 onChange={(event) => {
                   setCity(event.target.value);
@@ -272,11 +279,9 @@ export function Mobile({ onOpen }) {
                 }}
               >
                 <option value="">全广西</option>
-                {["南宁", "柳州", "桂林", "北海", "崇左", "河池"].map(
-                  (name) => (
-                    <option key={name}>{name}</option>
-                  ),
-                )}
+                {marketCities(data.resources, data.user?.city).map((name) => (
+                  <option key={name}>{name}</option>
+                ))}
               </Select>
               <ChevronDown size={13} />
             </label>
@@ -396,7 +401,7 @@ export function Mobile({ onOpen }) {
                       onChange={(e) => setCity(e.target.value)}
                     >
                       <option value="">全部城市</option>
-                      {["南宁", "柳州", "桂林", "北海", "崇左", "全区"].map(
+                      {marketCities(data.resources, data.user?.city).map(
                         (c) => (
                           <option key={c}>{c}</option>
                         ),

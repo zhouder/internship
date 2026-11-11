@@ -1,4 +1,11 @@
-import { useEffect, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
+import { createPortal } from "react-dom";
 import {
   Search,
   X,
@@ -120,30 +127,82 @@ export function Panel({ title, action, children, className = "" }) {
     </section>
   );
 }
-export function Modal({ title, onClose, children, wide = false }) {
+const ModalDepth = createContext(0);
+const openModals = [];
+let savedBodyStyles;
+const topModal = () =>
+  openModals.reduce(
+    (top, item) => (!top || item.depth >= top.depth ? item : top),
+    null,
+  );
+export function Modal({
+  title,
+  onClose,
+  children,
+  wide = false,
+  className = "",
+}) {
+  const depth = useContext(ModalDepth);
   const ref = useRef(null);
   const closeRef = useRef(onClose);
   useEffect(() => {
     closeRef.current = onClose;
   }, [onClose]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const previous = document.activeElement;
-    const saved = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    ref.current?.focus();
+    const entry = { depth, ref };
+    if (!openModals.length) {
+      savedBodyStyles = {
+        overflow: document.body.style.overflow,
+        paddingRight: document.body.style.paddingRight,
+      };
+      const gap = window.innerWidth - document.documentElement.clientWidth;
+      if (gap > 0)
+        document.body.style.paddingRight =
+          (parseFloat(getComputedStyle(document.body).paddingRight) || 0) +
+          gap +
+          "px";
+      document.body.style.overflow = "hidden";
+    }
+    openModals.push(entry);
+    ref.current?.focus({ preventScroll: true });
     const handler = (e) => {
-      if (e.key === "Escape") closeRef.current();
+      if (topModal() !== entry) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeRef.current();
+      }
       if (e.key === "Tab") {
-        const nodes = ref.current?.querySelectorAll(
-          "button,input,textarea,select,[href]",
+        const nodes = [
+          ...(ref.current?.querySelectorAll(
+            "button,input,textarea,select,[href],[tabindex]",
+          ) || []),
+        ].filter(
+          (node) =>
+            !node.disabled &&
+            node.tabIndex >= 0 &&
+            node.getClientRects().length &&
+            !node.closest('[aria-hidden="true"]'),
         );
-        if (!nodes?.length) return;
+        if (!nodes.length) {
+          e.preventDefault();
+          ref.current?.focus();
+          return;
+        }
         const first = nodes[0],
           last = nodes[nodes.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
+        if (
+          e.shiftKey &&
+          (document.activeElement === first ||
+            document.activeElement === ref.current)
+        ) {
           e.preventDefault();
           last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
+        } else if (
+          !e.shiftKey &&
+          (document.activeElement === last ||
+            !ref.current?.contains(document.activeElement))
+        ) {
           e.preventDefault();
           first.focus();
         }
@@ -151,35 +210,48 @@ export function Modal({ title, onClose, children, wide = false }) {
     };
     document.addEventListener("keydown", handler);
     return () => {
-      document.body.style.overflow = saved;
+      const index = openModals.indexOf(entry);
+      if (index >= 0) openModals.splice(index, 1);
+      if (!openModals.length && savedBodyStyles) {
+        Object.assign(document.body.style, savedBodyStyles);
+        savedBodyStyles = null;
+      }
       document.removeEventListener("keydown", handler);
-      previous?.focus();
+      if (
+        previous?.isConnected &&
+        (!topModal() || topModal().ref.current?.contains(previous))
+      )
+        previous.focus({ preventScroll: true });
     };
-  }, []);
-  return (
-    <div
-      className="modal-backdrop"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <section
-        ref={ref}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className={`modal ${wide ? "wide" : ""}`}
+  }, [depth]);
+  return createPortal(
+    <ModalDepth.Provider value={depth + 1}>
+      <div
+        className="modal-backdrop"
+        style={{ zIndex: 1000 + depth * 10 }}
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
       >
-        <header>
-          <h2>{title}</h2>
-          <button className="icon-button" aria-label="关闭" onClick={onClose}>
-            <X />
-          </button>
-        </header>
-        <div className="modal-body">{children}</div>
-      </section>
-    </div>
+        <section
+          ref={ref}
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          className={`modal ${wide ? "wide" : ""} ${className}`}
+        >
+          <header>
+            <h2>{title}</h2>
+            <button className="icon-button" aria-label="关闭" onClick={onClose}>
+              <X />
+            </button>
+          </header>
+          <div className="modal-body">{children}</div>
+        </section>
+      </div>
+    </ModalDepth.Provider>,
+    document.body,
   );
 }
 export function ResourceCard({

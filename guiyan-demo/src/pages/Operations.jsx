@@ -23,7 +23,16 @@ export function Operations() {
     [offline, setOffline] = useState(false),
     [queue, setQueue] = useState(() => {
       try {
-        return JSON.parse(localStorage.getItem(storage) || "[]").slice(0, 100);
+        const saved = JSON.parse(localStorage.getItem(storage) || "[]");
+        return Array.isArray(saved)
+          ? [
+              ...new Set(
+                saved.filter(
+                  (v) => typeof v === "string" && /^GYT[A-Z0-9]{1,37}$/.test(v),
+                ),
+              ),
+            ].slice(0, 100)
+          : [];
       } catch {
         return [];
       }
@@ -59,7 +68,11 @@ export function Operations() {
     );
   function saveQueue(q) {
     setQueue(q);
-    localStorage.setItem(storage, JSON.stringify(q));
+    try {
+      localStorage.setItem(storage, JSON.stringify(q));
+    } catch {
+      setToast("浏览器暂存不可用，请保持本页打开并尽快联网校验");
+    }
   }
   async function verify(e) {
     e.preventDefault();
@@ -86,7 +99,9 @@ export function Operations() {
       try {
         navigator.vibrate?.(120);
       } catch {}
-      await refresh();
+      await refresh().catch(() =>
+        setToast("票已核销成功，但列表刷新失败，请恢复网络后刷新核对"),
+      );
     } catch (e) {
       setResult(e.message);
     } finally {

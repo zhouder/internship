@@ -1,5 +1,7 @@
+import { marketCities } from "./market-cities";
 import { Select } from "./Select";
 import { useState } from "react";
+import { useHashPage, userPages, privatePages } from "./useHashPage";
 import {
   ChevronDown,
   Bell,
@@ -26,27 +28,15 @@ const helpContent = {
   预约与退款:
     "打开资源详情，选择日期与数量提交预约。后台确认后可进行模拟支付；需要退订时，在“我的订单”申请退款，等待后台处理。演示系统不收取真实费用。",
   合作与资源入驻:
-    "可在需求大厅发布合作需求，说明预算、城市和活动内容。资源合作方账号可体验资源管理功能；内容审核通过后再对其他用户展示。",
+    "可在需求大厅发布合作需求，说明预算、城市和活动内容。资源合作方可发布合作需求和站内沟通，资源上架由管理员维护；内容审核通过后再对其他用户展示。",
   隐私与使用说明:
     "请使用演示账号和虚构信息测试，不上传身份证、银行卡或真实客户资料。支付、授权和外部业务渠道为模拟；AI服务状态见助手页面，启用DeepSeek时会将相关演示数据发送给模型生成回答。",
 };
 
 export function Desktop({ onOpen }) {
   const { data, action } = useApp();
-  const [page, setPage] = useState(() =>
-    [
-      "resources",
-      "demands",
-      "profile",
-      "orders",
-      "favorites",
-      "messages",
-      "ai",
-      "topics",
-    ].includes(location.hash.slice(1))
-      ? location.hash.slice(1)
-      : "home",
-  );
+  const [route, setPage] = useHashPage(userPages, "home");
+  const page = !data.user && privatePages.includes(route) ? "profile" : route;
   const [category, setCategory] = useState("");
   const [query, setQuery] = useState("");
   const [city, setCity] = useState("");
@@ -64,7 +54,6 @@ export function Desktop({ onOpen }) {
       return;
     }
     setPage(next);
-    location.hash = next === "home" ? "" : next;
     window.scrollTo({ top: 0 });
   }
   function discover(id = "") {
@@ -170,11 +159,12 @@ export function Desktop({ onOpen }) {
             <span className="sr-only">所在城市</span>
             <Select
               aria-label="所在城市"
+              compact
               value={city}
               onChange={(event) => setCity(event.target.value)}
             >
               <option value="">全广西</option>
-              {["南宁", "柳州", "桂林", "北海", "崇左", "河池"].map((name) => (
+              {marketCities(data.resources, data.user?.city).map((name) => (
                 <option key={name}>{name}</option>
               ))}
             </Select>
@@ -395,17 +385,11 @@ export function Desktop({ onOpen }) {
                       }}
                     >
                       <option value="">全部城市</option>
-                      {[
-                        "南宁",
-                        "柳州",
-                        "桂林",
-                        "北海",
-                        "崇左",
-                        "河池",
-                        "全区",
-                      ].map((name) => (
-                        <option key={name}>{name}</option>
-                      ))}
+                      {marketCities(data.resources, data.user?.city).map(
+                        (name) => (
+                          <option key={name}>{name}</option>
+                        ),
+                      )}
                     </Select>
                     <Select
                       aria-label="资源排序"
