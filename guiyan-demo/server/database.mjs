@@ -61,6 +61,9 @@ export function createRequestHandler(db, handle) {
           new URL(req.url, "http://localhost").pathname === "/api/export",
         success: () => res.statusCode < 400,
       });
+      // Remote model calls run after commit/release, so their latency never
+      // holds the write lock or a database transaction open.
+      if (res.statusCode < 400 && res.afterDatabase) await res.afterDatabase();
       res.end = end;
       res.end(...(pending || []));
     } catch (error) {

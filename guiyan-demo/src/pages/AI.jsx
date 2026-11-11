@@ -1,30 +1,47 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Send, Sparkles, Bot } from "lucide-react";
 import { useApp } from "../state";
 import { api } from "../api";
 import { PageTitle, Badge, Panel } from "../ui";
 export function AI({ mobile = false }) {
-  const { setToast } = useApp();
+  const { data, setToast } = useApp();
   const [kind, setKind] = useState(mobile ? "support" : "operator"),
     [input, setInput] = useState(""),
     [loading, setLoading] = useState(false),
-    [messages, setMessages] = useState([
-      {
-        role: "assistant",
-        text: "你好，我是桂演演示助手。可以查询运营数据、解答订单问题，或组合宣传文案。当前使用本地规则与模板。",
-      },
-    ]);
+    [histories, setHistories] = useState({
+      operator: [],
+      support: [],
+      copy: [],
+    });
+  const messages = histories[kind],
+    chatRef = useRef(null),
+    external = data.ai?.configured;
+  useEffect(() => {
+    if (chatRef.current)
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [messages, loading]);
+  const append = (message) =>
+    setHistories((h) => ({ ...h, [kind]: [...h[kind], message].slice(-20) }));
   async function send(prompt) {
     if (!prompt.trim() || loading) return;
-    setMessages((m) => [...m, { role: "user", text: prompt }]);
+    const history = messages
+      .slice(-6)
+      .map((m) => ({ role: m.role, content: m.text.slice(0, 1500) }));
+    append({ role: "user", text: prompt });
     setInput("");
     setLoading(true);
     try {
-      const r = await api("/ai", { method: "POST", body: { prompt, kind } });
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", text: r.answer, sections: r.sections },
-      ]);
+      const r = await api("/ai", {
+        method: "POST",
+        body: { prompt, kind, history },
+      });
+      append({
+        role: "assistant",
+        text: r.answer,
+        sections: r.sections,
+        provider: r.provider,
+        fallbackReason: r.fallbackReason,
+      });
     } catch (e) {
       setToast(e.message);
     } finally {
@@ -52,6 +69,7 @@ export function AI({ mobile = false }) {
           <button
             key={k}
             className={kind === k ? "active" : ""}
+            disabled={loading}
             onClick={() => setKind(k)}
           >
             {v}
@@ -69,18 +87,46 @@ export function AI({ mobile = false }) {
                   ? "宣传文案助手"
                   : "用户服务助手"}
             </strong>
-            <Badge>本地模拟</Badge>
+            <Badge>{external ? "DeepSeek" : "本地规则"}</Badge>
           </div>
-          <div className="chat-messages" aria-live="polite">
+          <div ref={chatRef} className="chat-messages" aria-live="polite">
+            {!messages.length ? (
+              <div className="chat-message assistant">
+                <span className="chat-avatar">
+                  <Sparkles size={17} />
+                </span>
+                <div>
+                  你好，我是桂演助手，可以解答订单、分析运营数据或生成宣传文案。
+                  {external
+                    ? "当前由DeepSeek生成回答。"
+                    : "当前使用本地规则与模板。"}
+                  业务数据为模拟，重要信息请核实。
+                </div>
+              </div>
+            ) : null}
             {messages.map((m, i) => (
               <div key={i} className={`chat-message ${m.role}`}>
                 <span className="chat-avatar">
                   {m.role === "user" ? "我" : <Sparkles size={17} />}
                 </span>
                 <div>
+                  {m.role === "assistant" ? (
+                    <small className="ai-response-source">
+                      {m.provider === "deepseek"
+                        ? "DeepSeek · 模拟业务数据"
+                        : "本地规则"}
+                      {m.fallbackReason
+                        ? " · " + m.fallbackReason + "，本次已回退本地规则"
+                        : ""}
+                    </small>
+                  ) : null}
                   {m.sections ? (
                     <div className="copy-sections">
-                      <small>本地多渠道模板草稿</small>
+                      <small>
+                        {m.provider === "deepseek"
+                          ? "AI多渠道文案草稿"
+                          : "本地多渠道模板草稿"}
+                      </small>
                       <h3>{m.sections.title}</h3>
                       <p>{m.sections.body}</p>
                       {m.sections.channels.map((c) => (
@@ -97,7 +143,11 @@ export function AI({ mobile = false }) {
                 </div>
               </div>
             ))}
-            {loading ? <p className="muted">正在整理回答…</p> : null}
+            {loading ? (
+              <p className="muted">
+                {external ? "DeepSeek正在生成回答…" : "正在整理回答…"}
+              </p>
+            ) : null}
           </div>
           <form
             className="chat-input"
@@ -157,7 +207,10 @@ export function AI({ mobile = false }) {
             ))}
           </div>
           <p className="note">
-            本Demo没有调用大模型、短信或支付接口。这里的回答由可解释的本地规则和模板生成。
+            {external
+              ? `已接入DeepSeek。本站每日最多${data.ai.limits.daily}次外部请求，每人每日${data.ai.limits.user}次、每分钟${data.ai.limits.minute}次。服务异常或达到限额时使用本地规则。`
+              : "当前使用本地规则与模板。"}
+            支付、短信和外部业务渠道仍为模拟；AI不能直接操作订单或资金。
           </p>
         </Panel>
       </div>

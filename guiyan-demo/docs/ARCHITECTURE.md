@@ -1,6 +1,6 @@
 # 架构与数据说明
 
-当前H5手机端、电脑网站和管理后台均使用 React 与 Vite，共用Node HTTP业务接口。本地使用SQLite，阿里云线上使用PostgreSQL；原Vercel/Neon环境独立保留。支付、AI和渠道等业务对接仍为模拟；数据库连接信息仅在服务端配置。部署方式见 [ECS部署说明](ECS_DEPLOYMENT.md)。历史原生小程序源码保留供参考。
+当前H5手机端、电脑网站和管理后台均使用 React 与 Vite，共用Node HTTP业务接口。本地使用SQLite，阿里云线上使用PostgreSQL；原Vercel/Neon环境独立保留。支付和渠道业务对接仍为模拟；AI可接入真实DeepSeek，未配置或异常时回退本地规则，详见[DeepSeek说明](DEEPSEEK.md)。数据库与模型凭据仅在服务端配置。部署方式见 [ECS部署说明](ECS_DEPLOYMENT.md)。历史原生小程序源码保留供参考。
 
 ```mermaid
 flowchart LR
@@ -8,7 +8,7 @@ flowchart LR
   M[电脑网页端] --> A
   B[管理后台] --> A
   A --> D[(本地SQLite 或 线上PostgreSQL)]
-  A --> R[规则分析与模拟AI]
+  A --> R[DeepSeek 或本地规则]
   A --> S[模拟支付和渠道同步]
 ```
 
@@ -92,4 +92,4 @@ stateDiagram-v2
 
 ## 后续对接
 
-目前内部API真实执行数据库读写，外部服务全部模拟。若以后接入微信登录、支付、短信或AI，应在服务端新增适配层，保留现有前端与业务状态机；真实API密钥不能放入H5或小程序源码。任何真实支付或版权交易都超出当前Demo范围。
+内部API真实执行数据库读写；DeepSeek通过服务端适配器进行真实调用，其余外部业务服务保持模拟。模型不能直接变更订单或资金；真实API密钥不进入H5或小程序源码。任何真实支付或版权交易都超出当前Demo范围。

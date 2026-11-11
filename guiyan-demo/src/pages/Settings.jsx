@@ -39,7 +39,7 @@ export function Settings() {
           <dl className="profile-dl">
             <dt>运行模式</dt>
             <dd>
-              <Badge>全模拟演示</Badge>
+              <Badge>业务数据模拟</Badge>
             </dd>
             <dt>权限控制</dt>
             <dd>用户、资源方、管理员角色；接口校验权限</dd>
@@ -53,7 +53,13 @@ export function Settings() {
               ；不采集真实身份证或支付信息
             </dd>
             <dt>外部连接</dt>
-            <dd>微信登录、支付、短信、渠道同步、版权确权、AI 均未真实接入</dd>
+            <dd>
+              微信登录、支付、短信、渠道同步、版权确权仍为模拟。AI：
+              {data.ai?.configured
+                ? "DeepSeek已配置，生成回答使用真实API"
+                : "本地规则"}
+              。
+            </dd>
           </dl>
         </Panel>
       </div>

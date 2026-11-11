@@ -89,6 +89,12 @@
 .copy-sections h3 {
   margin: 10px 0;
 }
+.ai-response-source {
+  display: block;
+  color: #77736e;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
 .copy-sections section {
   border-top: 1px solid #e4ddd6;
   padding-top: 10px;

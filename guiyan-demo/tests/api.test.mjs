@@ -34,7 +34,11 @@ before(async () => {
       poolOptions: { options: `-c search_path=${testSchema}` },
     });
   }
-  server = await createApp({ dbFile: ":memory:", database });
+  server = await createApp({
+    dbFile: ":memory:",
+    database,
+    aiOptions: { apiKey: "" },
+  });
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   base = "http://127.0.0.1:" + server.address().port;
@@ -1126,7 +1130,7 @@ test(
     const database = await openPostgresStore(process.env.TEST_DATABASE_URL, {
       poolOptions: { options: `-c search_path=${testSchema}` },
     });
-    server = await createApp({ database });
+    server = await createApp({ database, aiOptions: { apiKey: "" } });
     server.listen(0, "127.0.0.1");
     await once(server, "listening");
     base = "http://127.0.0.1:" + server.address().port;

@@ -9,6 +9,11 @@ import { categoryImages } from "./catalog-content.mjs";
 import { createInsights, dayOf, shiftDay } from "./insights.mjs";
 import { inventoryMode } from "./review-upgrade.mjs";
 import { operatorAnswer, supportAnswer, copyAnswer } from "./assistants.mjs";
+import {
+  createDeepseek,
+  operatorContext,
+  supportContext,
+} from "./deepseek.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const currentDay = () => dayOf(new Date().toISOString());
 const time = () => new Date().toISOString();
@@ -58,8 +63,10 @@ const bookingType = (r) => ["venue", "equipment"].includes(r.category);
 export async function createApp({
   dbFile = path.join(root, "data", "guiyan.sqlite"),
   database,
+  aiOptions,
 } = {}) {
   const db = database || (await openSqliteStore(dbFile));
+  const ai = createDeepseek(aiOptions);
   const all = (sql, ...params) => db.prepare(sql).all(...params);
   const get = (sql, ...params) => db.prepare(sql).get(...params);
   const run = (sql, ...params) => db.prepare(sql).run(...params);
@@ -349,6 +356,7 @@ export async function createApp({
           today,
           database: db.dialect,
           user: session ? safeUser(session) : null,
+          ai: ai.info(),
           categories,
           resources,
           recommendations: session
@@ -1216,23 +1224,82 @@ export async function createApp({
           ["copy", "operator", "support"].includes(b.kind || "support"),
           "无效助手类型",
         );
-        let result;
-        if (b.kind === "copy") result = copyAnswer(prompt);
+        const kind = b.kind || "support";
+        if (b.history !== undefined)
+          assert(
+            Array.isArray(b.history) &&
+              b.history.length <= 6 &&
+              b.history.every(
+                (m) =>
+                  m &&
+                  ["user", "assistant"].includes(m.role) &&
+                  typeof m.content === "string" &&
+                  m.content.length <= 1500,
+              ),
+            "对话历史格式错误",
+          );
+        let fallback, context;
+        if (kind === "copy") fallback = () => copyAnswer(prompt);
         else if (b.kind === "operator") {
           needAdmin();
-          result = { answer: operatorAnswer(prompt, await analysis()) };
-        } else
-          result = {
-            answer: supportAnswer(
+          const a = await analysis();
+          context = operatorContext(a);
+          fallback = () => ({ answer: operatorAnswer(prompt, a) });
+        } else {
+          const own = await orderRows({ id: u.id, role: "user" }),
+            resources = (
+              await all("SELECT * FROM resources WHERE status='published'")
+            ).map(resourceRow);
+          context = supportContext(own, resources);
+          fallback = () => ({ answer: supportAnswer(prompt, own, resources) });
+        }
+        let blocked;
+        if (ai.configured) {
+          const now = time(),
+            start = new Date(today + "T00:00:00+08:00").toISOString(),
+            minute = new Date(Date.now() - 60000).toISOString();
+          const usage = await get(
+            "SELECT COUNT(CASE WHEN created_at>=? THEN 1 END) AS total,COUNT(CASE WHEN user_id=? AND created_at>=? THEN 1 END) AS own,COUNT(CASE WHEN user_id=? AND created_at>=? THEN 1 END) AS recent FROM events WHERE type='ai.external' AND created_at>=?",
+            start,
+            u.id,
+            start,
+            u.id,
+            minute,
+            minute < start ? minute : start,
+          );
+          blocked =
+            usage.total >= ai.limits.daily
+              ? "daily_limit"
+              : usage.own >= ai.limits.user
+                ? "user_limit"
+                : usage.recent >= ai.limits.minute
+                  ? "minute_limit"
+                  : null;
+          if (!blocked)
+            await run(
+              "INSERT INTO events(user_id,type,detail,created_at) VALUES(?,?,?,?)",
+              u.id,
+              "ai.external",
+              kind,
+              now,
+            );
+        }
+        await audit(
+          u,
+          `AI提问 ${kind}`,
+          `服务：${ai.info().provider}；问题${prompt.length}字${blocked ? "；使用本地回退" : ""}`,
+        );
+        res.afterDatabase = async () =>
+          send(
+            await ai.generate({
+              kind,
               prompt,
-              await orderRows({ id: u.id, role: "user" }),
-              (
-                await all("SELECT * FROM resources WHERE status='published'")
-              ).map(resourceRow),
-            ),
-          };
-        await audit(u, `AI模拟 ${b.kind || "support"}`, prompt);
-        send({ ...result, mock: true });
+              history: b.history,
+              context,
+              fallback,
+              blocked,
+            }),
+          );
         return;
       }
       if (p === "/api/settings" && req.method === "PATCH") {

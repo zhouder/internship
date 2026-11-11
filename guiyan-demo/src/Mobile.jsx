@@ -122,7 +122,7 @@ export function Profile({ onLogin, onNavigate }) {
         </button>
       </div>
       <p className="note mobile-note">
-        所有身份、订单、AI、支付与对接结果均为模拟。资源图片为生成示意图。
+        身份、订单、支付与业务对接均为模拟。AI服务状态见助手页面；资源图片为生成示意图。
       </p>
       <a href="/admin" className="admin-entry">
         进入管理后台
