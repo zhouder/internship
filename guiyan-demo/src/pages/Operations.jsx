@@ -1,3 +1,4 @@
+import { Select } from "../Select";
 import { useState } from "react";
 import { useApp } from "../state";
 import { api, money, shortDate, downloadText } from "../api";
@@ -387,7 +388,7 @@ export function Operations() {
                 </FormField>
               ))}
               <FormField label="归属营销活动">
-                <select
+                <Select
                   value={coupon.campaignCode}
                   onChange={(e) =>
                     setCoupon((c) => ({ ...c, campaignCode: e.target.value }))
@@ -399,7 +400,7 @@ export function Operations() {
                       {c.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </FormField>
               <button className="button primary" disabled={busy}>
                 创建优惠券

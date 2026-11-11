@@ -1,3 +1,4 @@
+import { Select } from "../Select";
 import { useState } from "react";
 import { useApp } from "../state";
 import { PageTitle, Badge, Empty } from "../ui";
@@ -37,7 +38,7 @@ export function Moderation() {
         >
           合作私信
         </button>
-        <select
+        <Select
           aria-label="审核状态"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -46,7 +47,7 @@ export function Moderation() {
           <option value="approved">已通过</option>
           <option value="rejected">已驳回</option>
           <option value="">全部状态</option>
-        </select>
+        </Select>
       </div>
       <div className="moderation-list">
         {rows.map((r) => (

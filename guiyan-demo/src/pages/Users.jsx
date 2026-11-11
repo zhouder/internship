@@ -1,3 +1,4 @@
+import { Select } from "../Select";
 import { useEffect, useState } from "react";
 import { useApp } from "../state";
 import { money, api, downloadText, shortDate } from "../api";
@@ -127,7 +128,7 @@ export function Users() {
             onChange={setQuery}
             placeholder="搜索用户、城市或标签"
           />
-          <select
+          <Select
             aria-label="用户分群"
             value={tag}
             onChange={(e) => {
@@ -139,8 +140,8 @@ export function Users() {
             {allTags.map((t) => (
               <option key={t}>{t}</option>
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
             aria-label="分群城市"
             value={city}
             onChange={(e) => {
@@ -152,8 +153,8 @@ export function Users() {
             {[...new Set(data.profiles.map((u) => u.city))].map((c) => (
               <option key={c}>{c}</option>
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
             aria-label="分群来源渠道"
             value={channel}
             onChange={(e) => {
@@ -165,7 +166,7 @@ export function Users() {
             {[...new Set(data.profiles.map((u) => u.channel))].map((c) => (
               <option key={c}>{c}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="segment-controls">
           <input
@@ -200,7 +201,7 @@ export function Users() {
           >
             保存当前分群
           </button>
-          <select
+          <Select
             aria-label="已保存分群"
             value={savedId}
             onChange={(e) => {
@@ -220,7 +221,7 @@ export function Users() {
                 {g.name}
               </option>
             ))}
-          </select>
+          </Select>
           <button className="button" onClick={exportRows}>
             导出当前名单
           </button>

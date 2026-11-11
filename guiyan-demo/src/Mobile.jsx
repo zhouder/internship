@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 import { useState } from "react";
 import {
   Home,
@@ -162,17 +163,17 @@ export function Profile({ onLogin, onNavigate }) {
               />
             </FormField>
             <FormField label="城市">
-              <select
+              <Select
                 value={f.city}
                 onChange={(e) => setF((x) => ({ ...x, city: e.target.value }))}
               >
                 {["南宁", "柳州", "桂林", "北海"].map((c) => (
                   <option key={c}>{c}</option>
                 ))}
-              </select>
+              </Select>
             </FormField>
             <FormField label="兴趣偏好">
-              <select
+              <Select
                 value={f.preference}
                 onChange={(e) =>
                   setF((x) => ({ ...x, preference: e.target.value }))
@@ -183,7 +184,7 @@ export function Profile({ onLogin, onNavigate }) {
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </FormField>
             <SubmitButton busy={busy}>保存偏好</SubmitButton>
           </form>
@@ -262,7 +263,7 @@ export function Mobile({ onOpen }) {
               桂演
             </a>
             <label className="city-button">
-              <select
+              <Select
                 aria-label="所在城市"
                 value={city}
                 onChange={(event) => {
@@ -270,13 +271,13 @@ export function Mobile({ onOpen }) {
                   setLimit(12);
                 }}
               >
-                <option value="">南宁</option>
+                <option value="">全广西</option>
                 {["南宁", "柳州", "桂林", "北海", "崇左", "河池"].map(
                   (name) => (
                     <option key={name}>{name}</option>
                   ),
                 )}
-              </select>
+              </Select>
               <ChevronDown size={13} />
             </label>
             <div className="mobile-top-right">
@@ -389,7 +390,7 @@ export function Mobile({ onOpen }) {
                     ))}
                   </div>
                   <div className="filter-bar">
-                    <select
+                    <Select
                       aria-label="城市"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
@@ -400,8 +401,8 @@ export function Mobile({ onOpen }) {
                           <option key={c}>{c}</option>
                         ),
                       )}
-                    </select>
-                    <select
+                    </Select>
+                    <Select
                       aria-label="排序"
                       value={sort}
                       onChange={(e) => setSort(e.target.value)}
@@ -409,7 +410,7 @@ export function Mobile({ onOpen }) {
                       <option value="default">推荐排序</option>
                       <option value="price">价格最低</option>
                       <option value="rating">评分最高</option>
-                    </select>
+                    </Select>
                   </div>
                 </>
               ) : null}

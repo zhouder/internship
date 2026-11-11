@@ -1,3 +1,4 @@
+import { Select } from "../Select";
 import { useState } from "react";
 import { Plus, MapPin, MessageCircle, Sparkles } from "lucide-react";
 import { useApp } from "../state";
@@ -30,7 +31,7 @@ export function MessageForm({ to, onClose }) {
     <Modal title="发送站内私信" onClose={onClose}>
       <form className="form" onSubmit={submit}>
         <FormField label="接收人">
-          <select value={target} onChange={(e) => setTarget(e.target.value)}>
+          <Select value={target} onChange={(e) => setTarget(e.target.value)}>
             {data.members
               .filter((u) => u.id !== data.user?.id)
               .map((u) => (
@@ -38,7 +39,7 @@ export function MessageForm({ to, onClose }) {
                   {u.name}
                 </option>
               ))}
-          </select>
+          </Select>
         </FormField>
         <FormField label="沟通内容">
           <textarea
@@ -105,7 +106,7 @@ export function DemandForm({ onClose }) {
         </FormField>
         <div className="form-row">
           <FormField label="需求分类">
-            <select
+            <Select
               value={f.category}
               onChange={(e) => set("category", e.target.value)}
             >
@@ -114,7 +115,7 @@ export function DemandForm({ onClose }) {
                   {c.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </FormField>
           <FormField label="预算（元）">
             <input

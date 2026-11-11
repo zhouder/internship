@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 import { useState } from "react";
 import { useApp } from "./state";
 import { PageTitle, Empty, Badge, FormField, SubmitButton } from "./ui";
@@ -99,7 +100,7 @@ export function Messages() {
       ) : (
         <section className="conversation">
           <FormField label="选择联系人">
-            <select
+            <Select
               aria-label="私信联系人"
               value={peer}
               onChange={(e) => choosePeer(e.target.value)}
@@ -120,7 +121,7 @@ export function Messages() {
                       : ""}
                   </option>
                 ))}
-            </select>
+            </Select>
           </FormField>
           {peer ? (
             <>

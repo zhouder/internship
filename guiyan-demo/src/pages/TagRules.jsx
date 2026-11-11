@@ -1,3 +1,4 @@
+import { Select } from "../Select";
 import { useState } from "react";
 import { useApp } from "../state";
 import { Modal, FormField, SubmitButton } from "../ui";
@@ -88,13 +89,13 @@ export function TagRules({ onClose }) {
                 />
               </FormField>
               <FormField label="条件关系">
-                <select
+                <Select
                   value={r.match}
                   onChange={(e) => edit(i, "match", e.target.value)}
                 >
                   <option value="all">全部满足</option>
                   <option value="any">任一满足</option>
-                </select>
+                </Select>
               </FormField>
               <label className="checkbox">
                 <input
@@ -116,7 +117,7 @@ export function TagRules({ onClose }) {
             </div>
             {r.conditions.map((c, j) => (
               <div className="rule-condition" key={j}>
-                <select
+                <Select
                   aria-label={`规则${i + 1}条件${j + 1}维度`}
                   value={c.field}
                   onChange={(e) => condition(i, j, "field", e.target.value)}
@@ -126,8 +127,8 @@ export function TagRules({ onClose }) {
                       {v}
                     </option>
                   ))}
-                </select>
-                <select
+                </Select>
+                <Select
                   aria-label={`规则${i + 1}条件${j + 1}比较`}
                   value={c.op}
                   onChange={(e) => condition(i, j, "op", e.target.value)}
@@ -146,9 +147,9 @@ export function TagRules({ onClose }) {
                       {v}
                     </option>
                   ))}
-                </select>
+                </Select>
                 {["preference", "view_category"].includes(c.field) ? (
-                  <select
+                  <Select
                     aria-label={`规则${i + 1}条件${j + 1}值`}
                     value={c.value}
                     onChange={(e) => condition(i, j, "value", e.target.value)}
@@ -158,7 +159,7 @@ export function TagRules({ onClose }) {
                         {t.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 ) : (
                   <input
                     aria-label={`规则${i + 1}条件${j + 1}值`}

@@ -1,3 +1,4 @@
+import { Select } from "../Select";
 import { useState, useEffect } from "react";
 import {
   Banknote,
@@ -179,7 +180,7 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
             导出经营报告
           </button>
         ) : null}
-        <select
+        <Select
           aria-label="统计周期"
           value={period}
           onChange={(e) => changePeriod(e.target.value)}
@@ -188,7 +189,7 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
           <option value="week">按周统计</option>
           <option value="month">按月统计</option>
           <option value="quarter">按季度统计</option>
-        </select>
+        </Select>
         <button
           className="button primary"
           onClick={() => exportOrders().catch((e) => setToast(e.message))}
@@ -260,7 +261,7 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
             <Panel
               title="异常预警"
               action={
-                <select
+                <Select
                   aria-label="触发模拟预警"
                   defaultValue=""
                   onChange={async (e) => {
@@ -281,7 +282,7 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
                   <option value="inventory">库存异常</option>
                   <option value="data">数据异常</option>
                   <option value="sentiment">舆情风险</option>
-                </select>
+                </Select>
               }
             >
               <div className="alerts">

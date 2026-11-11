@@ -108,16 +108,7 @@
 .demo-ticket > div {
   min-width: 0;
 }
-.ticket-print-sheet {
-  position: fixed;
-  top: -99999px;
-  left: -99999px;
-  width: 100%;
-  opacity: 0;
-  pointer-events: none;
-  z-index: -1;
-  visibility: hidden;
-}
+
 .booking-seats {
   display: grid;
   grid-template-columns: repeat(10, minmax(0, 1fr));
@@ -178,34 +169,5 @@
   }
   .booking-seats button {
     padding: 10px 0;
-  }
-}
-@media print {
-  * {
-    transition: none !important;
-    animation: none !important;
-  }
-  body > *:not(.ticket-print-sheet) {
-    display: none !important;
-  }
-  .ticket-print-sheet {
-    position: static !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    display: block !important;
-    z-index: auto !important;
-  }
-  .ticket-print-sheet .demo-ticket {
-    break-inside: avoid;
-    margin: 12mm;
-    flex-direction: row;
-    color: #000;
-    page-break-inside: avoid;
-  }
-  .ticket-print-sheet .note {
-    font-size: 10pt;
-  }
-  @page {
-    margin: 0;
   }
 }

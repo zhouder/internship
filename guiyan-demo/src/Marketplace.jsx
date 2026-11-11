@@ -1,3 +1,4 @@
+import { Select } from "./Select";
 import { useState } from "react";
 import {
   ChevronDown,
@@ -167,16 +168,16 @@ export function Desktop({ onOpen }) {
           </a>
           <label className="site-city">
             <span className="sr-only">所在城市</span>
-            <select
+            <Select
               aria-label="所在城市"
               value={city}
               onChange={(event) => setCity(event.target.value)}
             >
-              <option value="">南宁</option>
+              <option value="">全广西</option>
               {["南宁", "柳州", "桂林", "北海", "崇左", "河池"].map((name) => (
                 <option key={name}>{name}</option>
               ))}
-            </select>
+            </Select>
             <ChevronDown size={14} />
           </label>
           <nav className="website-nav" aria-label="网站导航">
@@ -385,7 +386,7 @@ export function Desktop({ onOpen }) {
                       : "全部分类"}
                   </span>
                   <div>
-                    <select
+                    <Select
                       aria-label="城市筛选"
                       value={city}
                       onChange={(event) => {
@@ -405,8 +406,8 @@ export function Desktop({ onOpen }) {
                       ].map((name) => (
                         <option key={name}>{name}</option>
                       ))}
-                    </select>
-                    <select
+                    </Select>
+                    <Select
                       aria-label="资源排序"
                       value={sort}
                       onChange={(event) => setSort(event.target.value)}
@@ -414,7 +415,7 @@ export function Desktop({ onOpen }) {
                       <option value="default">推荐排序</option>
                       <option value="price">价格从低到高</option>
                       <option value="rating">评分从高到低</option>
-                    </select>
+                    </Select>
                   </div>
                 </div>
               </>

@@ -1,0 +1,194 @@
+.smart-select {
+  position: relative;
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  vertical-align: middle;
+}
+.field > .smart-select {
+  display: block;
+  width: 100%;
+}
+.smart-select .smart-select-trigger {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid #dededb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: #282823;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 2px #25211b04;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.smart-select-trigger:hover:not(:disabled) {
+  border-color: #bf9b8c;
+  background: #fffcfa;
+}
+.smart-select-trigger:focus-visible,
+.smart-select-trigger[aria-expanded="true"] {
+  outline: 0;
+  border-color: #ba482d;
+  box-shadow: 0 0 0 3px #ba482d16;
+}
+.smart-select-trigger[aria-invalid="true"] {
+  border-color: #b42828;
+}
+.smart-select-trigger:disabled {
+  background: #f3f2f0;
+  color: #92918b;
+  cursor: not-allowed;
+}
+.smart-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.smart-select .select-chevron {
+  flex: none;
+  color: #74716b;
+  transition: transform 0.15s;
+}
+.smart-select .select-chevron.open {
+  transform: rotate(180deg);
+}
+.smart-select-menu {
+  z-index: 10000;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border: 1px solid #e9e3dd;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow:
+    0 12px 36px #33261924,
+    0 2px 8px #3326190a;
+  font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: #33312d;
+  box-sizing: border-box;
+}
+.smart-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 40px;
+  padding: 9px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  user-select: none;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+}
+.smart-select-option > svg {
+  flex: none;
+  color: #b9452a;
+}
+.smart-select-option[aria-selected="true"] {
+  color: #b9452a;
+  font-weight: 600;
+}
+.smart-select-option[data-active="true"] {
+  background: #f8f3ed;
+}
+.smart-select-option[aria-selected="true"][data-active="true"] {
+  background: #fcf0e9;
+}
+.smart-select-option[aria-disabled="true"] {
+  color: #aaa;
+  cursor: not-allowed;
+}
+.smart-select select.smart-select-validation {
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  clip-path: inset(50%) !important;
+}
+.form-field > .smart-select,
+.form-field .smart-select,
+.form .smart-select {
+  display: block;
+  width: 100%;
+}
+.filter-bar > .smart-select {
+  min-width: 150px;
+}
+.website-filters .smart-select {
+  min-width: 150px;
+}
+.site-city .smart-select-trigger,
+.city-button .smart-select-trigger {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  width: auto;
+  font-size: 17px;
+  font-weight: 600;
+  gap: 9px;
+  padding: 8px;
+  min-height: 38px;
+}
+.site-city .smart-select,
+.city-button .smart-select {
+  flex: none;
+}
+.site-city .smart-select-trigger[aria-expanded="true"],
+.city-button .smart-select-trigger[aria-expanded="true"] {
+  background: #fbf0e9;
+  color: #b9452a;
+}
+.site-city .smart-select-trigger:focus-visible,
+.city-button .smart-select-trigger:focus-visible {
+  box-shadow: 0 0 0 3px #ba482d20;
+}
+.site-city > svg,
+.city-button > svg {
+  display: none;
+}
+@media (max-width: 560px) {
+  .smart-select-menu {
+    font-size: 15px;
+  }
+  .smart-select-option {
+    min-height: 44px;
+  }
+  .filter-bar > .smart-select {
+    min-width: 0;
+    flex: 1;
+  }
+  .smart-select .smart-select-trigger {
+    min-height: 44px;
+  }
+  .city-button .smart-select-trigger {
+    font-size: 15px;
+    padding: 6px;
+    min-height: 36px;
+  }
+  .weight-fields .smart-select {
+    min-width: 0;
+  }
+}

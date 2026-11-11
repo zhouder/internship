@@ -1,3 +1,4 @@
+import { Select } from "../Select";
 import { useState } from "react";
 import { FileText, Download, Package, ShieldCheck } from "lucide-react";
 import { useApp } from "../state";
@@ -218,7 +219,7 @@ export function Transactions({ mobile = false }) {
           onChange={setQuery}
           placeholder="搜索订单编号或资源名称"
         />
-        <select
+        <Select
           aria-label="订单状态筛选"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
@@ -234,7 +235,7 @@ export function Transactions({ mobile = false }) {
                 {v}
               </option>
             ))}
-        </select>
+        </Select>
       </div>
       <div className="order-list">
         {rows.map((o) => (

@@ -1,3 +1,4 @@
+import { Select } from "../Select";
 import { useState, useEffect, useCallback } from "react";
 import {
   Plus,
@@ -71,7 +72,7 @@ export function ResourceForm({ resource, onClose }) {
         </FormField>
         <div className="form-row">
           <FormField label="资源分类">
-            <select
+            <Select
               disabled={!!resource}
               value={f.category}
               onChange={(e) => change("category", e.target.value)}
@@ -81,7 +82,7 @@ export function ResourceForm({ resource, onClose }) {
                   {c.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </FormField>
           <FormField label="所在城市">
             <input
@@ -131,7 +132,7 @@ export function ResourceForm({ resource, onClose }) {
         </div>
         {f.category === "show" ? (
           <FormField label="关联售票场馆（用于经营分析）">
-            <select
+            <Select
               value={f.venueId}
               onChange={(e) => change("venueId", e.target.value)}
             >
@@ -143,7 +144,7 @@ export function ResourceForm({ resource, onClose }) {
                     {r.name}
                   </option>
                 ))}
-            </select>
+            </Select>
           </FormField>
         ) : null}
         <FormField label="资源介绍">
@@ -193,7 +194,7 @@ export function Resources({
           onChange={onQueryChange}
           placeholder="搜索演出、场馆、艺人或服务"
         />
-        <select
+        <Select
           aria-label="城市筛选"
           value={city}
           onChange={(e) => setCity(e.target.value)}
@@ -202,8 +203,8 @@ export function Resources({
           {["南宁", "柳州", "桂林", "北海", "崇左", "全区"].map((c) => (
             <option key={c}>{c}</option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           aria-label="资源排序"
           value={sort}
           onChange={(e) => setSort(e.target.value)}
@@ -211,7 +212,7 @@ export function Resources({
           <option value="default">默认排序</option>
           <option value="price">价格从低到高</option>
           <option value="rating">评分从高到低</option>
-        </select>
+        </Select>
       </div>
       <div className="category-tabs">
         <button
@@ -717,14 +718,14 @@ export function ResourceDetail({
           {r.category === "show" ? (
             <>
               <FormField label="演出场次">
-                <select
+                <Select
                   aria-label="演出场次"
                   value={sessionTime}
                   onChange={(e) => setSessionTime(e.target.value)}
                 >
                   <option value="14:00">14:00（模拟场次）</option>
                   <option value="19:30">19:30（模拟场次）</option>
-                </select>
+                </Select>
               </FormField>
               <div>
                 <p>示例选座 · 已选{seats.length}席</p>
@@ -785,7 +786,7 @@ export function ResourceDetail({
           </FormField>
           {data.user ? (
             <FormField label="使用演示优惠券">
-              <select
+              <Select
                 aria-label="使用演示优惠券"
                 value={couponClaim}
                 onChange={(e) => setCouponClaim(e.target.value)}
@@ -802,7 +803,7 @@ export function ResourceDetail({
                       {c.name} · 减{money(c.amount)}
                     </option>
                   ))}
-              </select>
+              </Select>
               <small>请先在“我的 → 模拟钱包与优惠券”领券；每单最多一张。</small>
             </FormField>
           ) : null}
@@ -860,7 +861,7 @@ export function ResourceDetail({
                         : "资源质量"
                 }
               >
-                <select
+                <Select
                   value={rating}
                   onChange={(e) => setRating(e.target.value)}
                 >
@@ -869,10 +870,10 @@ export function ResourceDetail({
                       {v}分
                     </option>
                   ))}
-                </select>
+                </Select>
               </FormField>
               <FormField label="服务体验">
-                <select
+                <Select
                   value={serviceRating}
                   onChange={(e) => setServiceRating(e.target.value)}
                 >
@@ -881,10 +882,10 @@ export function ResourceDetail({
                       {v}分
                     </option>
                   ))}
-                </select>
+                </Select>
               </FormField>
               <FormField label="体验价值">
-                <select
+                <Select
                   value={valueRating}
                   onChange={(e) => setValueRating(e.target.value)}
                 >
@@ -893,7 +894,7 @@ export function ResourceDetail({
                       {v}分
                     </option>
                   ))}
-                </select>
+                </Select>
               </FormField>
             </div>
             <FormField label="评论内容">

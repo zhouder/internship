@@ -8,6 +8,7 @@ import "./marketplace.css";
 import "./review.css";
 import "./extensions.css";
 import "./performance.css";
+import "./select.css";
 
 // 启动性能监控
 if (import.meta.env.PROD) {

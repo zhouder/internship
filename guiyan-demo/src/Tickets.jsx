@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { api, shortDate } from "./api";
 import { useApp } from "./state";
 import { Modal } from "./ui";
+import { printTickets } from "./ticket-print";
 const names = { active: "待核销", used: "已核销", void: "已作废" };
 function Ticket({ ticket: t, qr }) {
   return (
@@ -33,7 +33,8 @@ export function Tickets({ order, onClose }) {
     [qrs, setQrs] = useState({}),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
-    [printing, setPrinting] = useState([]);
+    [printing, setPrinting] = useState(false);
+  const printLock = useRef(false);
   async function load(issue = false) {
     setLoading(true);
     setError("");
@@ -65,28 +66,21 @@ export function Tickets({ order, onClose }) {
   useEffect(() => {
     load();
   }, [order.id]);
-  useEffect(() => {
-    if (!printing.length) return;
-    const done = () => setPrinting([]);
-    window.addEventListener("afterprint", done);
-    // 延迟确保桌面浏览器完全渲染
-    const timer = setTimeout(() => {
-      window.print();
-    }, 100);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("afterprint", done);
-    };
-  }, [printing]);
   async function print(rows) {
+    if (printLock.current) return;
+    printLock.current = true;
+    setPrinting(true);
     try {
       await api("/demo/tickets/print", {
         method: "POST",
         body: { codes: rows.map((t) => t.code) },
       });
-      setPrinting(rows);
+      await printTickets(rows, qrs);
     } catch (e) {
       setToast(e.message);
+    } finally {
+      printLock.current = false;
+      setPrinting(false);
     }
   }
   return (
@@ -104,30 +98,30 @@ export function Tickets({ order, onClose }) {
             </button>
           ) : null}
           {tickets.length ? (
-            <button className="button primary" onClick={() => print(tickets)}>
-              批量打印 / 保存PDF
+            <button
+              className="button primary"
+              disabled={
+                printing || loading || tickets.some((t) => !qrs[t.code])
+              }
+              onClick={() => print(tickets)}
+            >
+              {printing ? "打印处理中…" : "批量打印 / 保存PDF"}
             </button>
           ) : null}
           {tickets.map((t) => (
             <div key={t.code}>
               <Ticket ticket={t} qr={qrs[t.code]} />
-              <button className="text-button" onClick={() => print([t])}>
+              <button
+                className="text-button"
+                disabled={printing || loading || !qrs[t.code]}
+                onClick={() => print([t])}
+              >
                 打印此票
               </button>
             </div>
           ))}
         </div>
       </Modal>
-      {printing.length
-        ? createPortal(
-            <div className="ticket-print-sheet">
-              {printing.map((t) => (
-                <Ticket key={t.code} ticket={t} qr={qrs[t.code]} />
-              ))}
-            </div>,
-            document.body,
-          )
-        : null}
     </>
   );
 }
