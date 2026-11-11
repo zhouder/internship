@@ -537,5 +537,10 @@ export function createInsights({
       },
     };
   }
-  return { profileRows, analysis, recommendations };
+  // 单个用户查看自己的画像：复用 profileRows 的计算口径，保证与运营端看到的一致
+  async function ownProfile(user) {
+    if (!user) return null;
+    return (await profileRows()).find((p) => p.id === user.id) || null;
+  }
+  return { profileRows, analysis, recommendations, ownProfile };
 }
