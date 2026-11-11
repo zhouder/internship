@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   color: #17263c;
   background: #f5f7fb;
@@ -2714,7 +2714,7 @@ tbody tr:hover { background: #f9faf9; }
    UI优化补丁 - 在现有styles.css末尾添加
    ============================================ */
 
-/* 1. 统一主色�?*/
+/* 1. 统一主色�?*/
 :root {
   --green: #176b5b;
   --green-hover: #125949;
@@ -2783,7 +2783,7 @@ tbody tr:hover { background: #f9faf9; }
   background-clip: text;
 }
 
-/* 6. 移动端触摸优�?*/
+/* 6. 移动端触摸优�?*/
 @media (max-width: 640px) and (hover: none) {
   .button:active {
     transform: scale(0.98);
@@ -2827,7 +2827,7 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* 9. 加载骨架�?*/
+/* 9. 加载骨架�?*/
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -2844,7 +2844,7 @@ input:focus, select:focus, textarea:focus {
   100% { background-position: -200% 0; }
 }
 
-/* 10. 无障碍增�?*/
+/* 10. 无障碍增�?*/
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -2855,7 +2855,7 @@ input:focus, select:focus, textarea:focus {
    UI优化补丁 - 在现有styles.css末尾添加
    ============================================ */
 
-/* 1. 统一主色�?*/
+/* 1. 统一主色�?*/
 :root {
   --green: #176b5b;
   --green-hover: #125949;
@@ -2924,7 +2924,7 @@ input:focus, select:focus, textarea:focus {
   background-clip: text;
 }
 
-/* 6. 移动端触摸优�?*/
+/* 6. 移动端触摸优�?*/
 @media (max-width: 640px) and (hover: none) {
   .button:active {
     transform: scale(0.98);
@@ -2968,7 +2968,7 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* 9. 加载骨架�?*/
+/* 9. 加载骨架�?*/
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -2985,7 +2985,7 @@ input:focus, select:focus, textarea:focus {
   100% { background-position: -200% 0; }
 }
 
-/* 10. 无障碍增�?*/
+/* 10. 无障碍增�?*/
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -3009,48 +3009,37 @@ input:focus, select:focus, textarea:focus {
   color: #97a9bc;
 }
 
-/* 2. 下拉选择框动画优化 */
+/* 2. 下拉选择框 - 现代化设计 */
 select {
   cursor: pointer;
   min-height: 40px;
-  border: 1px solid #dbe2eb;
-  border-radius: 10px;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
   background: white;
-  padding: 10px 12px;
+  padding: 10px 36px 10px 12px;
+  font-size: 14px;
+  color: #1d1d1f;
   transition: all 0.2s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23778397' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns=''http://www.w3.org/2000/svg'' width=''16'' height=''16'' viewBox=''0 0 24 24'' fill=''none'' stroke=''%235a6370'' stroke-width=''2'' stroke-linecap=''round'' stroke-linejoin=''round''%3E%3Cpolyline points=''6 9 12 15 18 9''%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 36px;
+  background-position: right 10px center;
+  background-size: 16px;
 }
 
 select:hover {
-  border-color: #176b5b;
-  box-shadow: 0 2px 8px rgba(23, 107, 91, 0.1);
+  border-color: #c1c7ce;
+  background-color: #fafbfc;
 }
 
 select:focus {
   outline: none;
-  border-color: #176b5b;
-  box-shadow: 0 0 0 3px rgba(23, 107, 91, 0.1);
+  border-color: #1a9177;
+  box-shadow: 0 0 0 3px rgba(26, 145, 119, 0.1);
 }
-
 /* 下拉选项样式 */
-select option {
-  padding: 10px;
-  background: white;
-  color: #17263c;
-}
-
-select option:hover,
-select option:focus,
-select option:checked {
-  background: linear-gradient(135deg, #eef9f5 0%, #e6f7f1 100%);
-  color: #176b5b;
-  font-weight: 500;
-}
-
 /* 3. H5移动端优化 */
 
 /* H5顶部导航优化 */

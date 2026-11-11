@@ -69,10 +69,10 @@ export function Tickets({ order, onClose }) {
     if (!printing.length) return;
     const done = () => setPrinting([]);
     window.addEventListener("afterprint", done);
-    // 延迟打印，确保Portal完全渲染
+    // 延迟确保桌面浏览器完全渲染
     const timer = setTimeout(() => {
       window.print();
-    }, 50);
+    }, 100);
     return () => {
       clearTimeout(timer);
       window.removeEventListener("afterprint", done);
