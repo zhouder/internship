@@ -18,6 +18,7 @@ export const inventoryMode = (r) =>
 export const upgradeColumns = {
   orders: {
     ...extensionColumns.orders,
+    resource_unit: "TEXT DEFAULT ''",
     paid_at: "TEXT",
     refunded_at: "TEXT",
     refund_decision: "TEXT DEFAULT ''",

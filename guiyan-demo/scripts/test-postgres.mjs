@@ -9,6 +9,7 @@ const result = spawnSync(
     "--test",
     "tests/api.test.mjs",
     "tests/deepseek.test.mjs",
+    "tests/ledger.test.mjs",
   ],
   {
     cwd: new URL("..", import.meta.url),

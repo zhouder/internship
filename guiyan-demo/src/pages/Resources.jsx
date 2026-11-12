@@ -74,7 +74,6 @@ export function ResourceForm({ resource, onClose }) {
         <div className="form-row">
           <FormField label="资源分类">
             <Select
-              disabled={!!resource}
               value={f.category}
               onChange={(e) => change("category", e.target.value)}
             >
@@ -86,12 +85,13 @@ export function ResourceForm({ resource, onClose }) {
             </Select>
           </FormField>
           <FormField label="所在城市">
-            <input
+            <Select
               required
               value={f.city}
-              disabled={!!resource}
               onChange={(e) => change("city", e.target.value)}
-            />
+            >
+              {marketCities(data.resources, f.city).map(city => <option key={city} value={city}>{city}</option>)}
+            </Select>
           </FormField>
         </div>
         <div className="form-row">
@@ -109,11 +109,10 @@ export function ResourceForm({ resource, onClose }) {
             <input
               required
               value={f.unit}
-              disabled={!!resource}
               onChange={(e) => change("unit", e.target.value)}
             />
           </FormField>
-          <FormField
+          {!["venue", "equipment", "service"].includes(f.category) ? <FormField
             label={
               ["show", "heritage", "tourism", "digital", "artist"].includes(
                 f.category,
@@ -129,8 +128,14 @@ export function ResourceForm({ resource, onClose }) {
               value={f.stock}
               onChange={(e) => change("stock", e.target.value)}
             />
-          </FormField>
+          </FormField> : null}
         </div>
+        {f.category === "venue" ? (
+          <FormField label="可容纳人数（人）">
+            <input type="number" required min="1" max="100000" step="1" value={f.capacity || ""} onChange={e => change("capacity", e.target.value)} />
+          </FormField>
+        ) : null}
+        {resource ? <p className="note">已有交易记录或被剧目关联的资源不能直接改类；如需改变用途，请新建资源，保留原订单记录。</p> : null}
         {f.category === "show" ? (
           <FormField label="关联售票场馆（用于经营分析）">
             <Select
@@ -458,7 +463,7 @@ export function ResourceDetail({
       "/orders",
       {
         resourceId: r.id,
-        date,
+        ...(r.inventory_mode !== "global" ? {date} : {}),
         quantity: Number(qty),
         note,
         channel,
@@ -468,7 +473,7 @@ export function ResourceDetail({
         seats,
         couponClaim,
       },
-      "预约已提交，等待后台确认",
+      r.inventory_mode === "global" ? "订单已提交，等待后台确认" : "预约已提交，等待后台确认",
     );
     if (result) {
       onBooked?.();
@@ -521,7 +526,7 @@ export function ResourceDetail({
                 ? "按日期和场次独立配额，选定场次后查看余量与座位。"
                 : "按日期独立配额，选定日期后查看余量。"}
             </p>
-          ) : null}
+          ) : r.inventory_mode === "global" ? <p className="resource-hint">按商品总库存下单，不按日期分配库存；交付安排可在备注中说明。</p> : null}
           <button
             className={`button ${favorite ? "selected" : ""}`}
             onClick={() => {
@@ -561,6 +566,7 @@ export function ResourceDetail({
       {tab === "detail" ? (
         <div className="detail-body">
           <p>{r.description}</p>
+          {r.category === "venue" ? <p className="resource-hint">可容纳人数：{r.capacity > 0 ? `${r.capacity.toLocaleString()} 人` : "待场馆补充"}</p> : null}
           <div className="meta-grid">
             {Object.entries(r.meta)
               .filter(
@@ -635,7 +641,7 @@ export function ResourceDetail({
             className="button primary full"
             onClick={() => setTab("book")}
           >
-            选择日期，提交预约
+            {r.inventory_mode === "global" ? "选择数量，提交订单" : r.category === "service" ? "选择期望服务日期" : "选择日期，提交预约"}
           </button>
         </div>
       ) : null}
@@ -668,16 +674,16 @@ export function ResourceDetail({
             </div>
           ) : null}
           <div className="form-row">
-            <FormField label={rental ? "预约日期" : "使用 / 配送日期"}>
+            {r.inventory_mode !== "global" ? <FormField label={rental ? "预约日期" : r.category === "service" ? "期望服务日期" : "使用日期"}>
               <input
-                aria-label="预约日期"
+                aria-label={r.category === "service" ? "期望服务日期" : "预约日期"}
                 type="date"
                 required
                 min={data.today}
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
-            </FormField>
+            </FormField> : null}
             <FormField
               label={
                 rental

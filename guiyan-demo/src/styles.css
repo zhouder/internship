@@ -2678,6 +2678,39 @@ td.order-code {
 .panel-head h2 { font-size: 15px; font-weight: 600; letter-spacing: -.15px; color: #26282b; }
 .chart-grid, .dashboard-bottom { gap: 16px; }
 .trend { padding: 5px 17px 12px; }
+.rich-text { white-space: normal; overflow-wrap: anywhere; }
+.rich-text p { margin: .35em 0; white-space: pre-wrap; }
+.rich-text h4 { margin: .8em 0 .35em; font-size: 1em; }
+.rich-text > :first-child { margin-top: 0; }
+.rich-text > :last-child { margin-bottom: 0; }
+.rich-text ul, .rich-text ol { margin: .4em 0; padding-left: 1.6em; }
+.rich-text li { margin: .2em 0; }
+.rich-text code { background: #ebe8e3; padding: 1px 4px; border-radius: 3px; font-size: .92em; }
+.rich-text pre { max-width: 100%; overflow-x: auto; padding: 10px; background: #ebe8e3; border-radius: 6px; white-space: pre; }
+.rich-text pre code { padding: 0; }
+.rich-text a { color: var(--primary); text-decoration: underline; }
+.conversation-list { display: grid; gap: 10px; }
+.conversation-card { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: white; text-align: left; }
+.conversation-card:hover { border-color: #bc7963; background: #fdfaf7; }
+.conversation-card .avatar { flex-shrink: 0; }
+.conversation-summary { flex: 1; min-width: 0; }
+.conversation-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.conversation-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-title time { font-size: 11px; color: #85817c; flex-shrink: 0; }
+.conversation-preview { display: block; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #777; font-size: 13px; }
+.unread-count { display: inline-flex; min-width: 20px; height: 20px; align-items: center; justify-content: center; padding: 0 5px; border-radius: 10px; background: #b7472c; color: white; font-size: 11px; flex-shrink: 0; }
+.conversation-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 12px; }
+.conversation-heading h3 { margin: 0; }
+.conversation-heading .text-button { display: inline-flex; align-items: center; gap: 6px; }
+.segment-history { max-height: 280px; overflow-y: auto; }
+.coverage-cell { display: block; position: relative; min-width: 70px; isolation: isolate; }
+.coverage-cell i { position: absolute; inset: 0 auto 0 0; max-width: 100%; background: #e9eee9; border-radius: 3px; z-index: -1; }
+@media (max-width: 560px) {
+  .conversation-card { padding: 12px; gap: 9px; }
+  .conversation-title { display: block; }
+  .conversation-title strong, .conversation-title time { display: block; }
+  .conversation-title time { margin-top: 3px; }
+}
 .trend text { fill: #92969d; }
 .channels { padding-top: 25px; }
 .donut { width: 132px; height: 132px; }

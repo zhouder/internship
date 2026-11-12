@@ -86,14 +86,14 @@ export async function api(
     signal?.removeEventListener("abort", abort);
   }
 }
-export async function exportOrders() {
-  const response = await fetch("/api/export", {
+export async function exportOrders(period) {
+  const response = await fetch("/api/export" + (period ? "?period=" + encodeURIComponent(period) : ""), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(tokenKey()) || ""}`,
     },
   });
   if (!response.ok) throw new Error("导出失败，请重新登录");
-  downloadBlob(await response.blob(), "桂演订单报表.csv");
+  downloadBlob(await response.blob(), period ? `桂演${{day:"日",week:"周",month:"月",quarter:"季度"}[period]}统计.csv` : "桂演订单报表.csv");
 }
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob),

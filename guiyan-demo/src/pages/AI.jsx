@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { RichText } from "../RichText";
 import { Send, Sparkles, Bot } from "lucide-react";
 import { useApp } from "../state";
 import { api } from "../api";
@@ -131,17 +132,17 @@ export function AI({ mobile = false }) {
                           : "本地多渠道模板草稿"}
                       </small>
                       <h3>{m.sections.title}</h3>
-                      <p>{m.sections.body}</p>
+                      <RichText text={m.sections.body} />
                       {m.sections.channels.map((c) => (
                         <section key={c.name}>
                           <h4>{c.name}</h4>
-                          <p>{c.content}</p>
+                          <RichText text={c.content} />
                         </section>
                       ))}
                       <small>{m.sections.notes.join("；")}</small>
                     </div>
                   ) : (
-                    m.text
+                    m.role === "assistant" ? <RichText text={m.text} /> : m.text
                   )}
                 </div>
               </div>

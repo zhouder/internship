@@ -31,13 +31,13 @@ export function Moderation() {
           >
             合作需求
           </button>
-        </div>
         <button
-          className={`button ${tab === "message" ? "selected" : ""}`}
+          className={tab === "message" ? "active" : ""}
           onClick={() => setTab("message")}
         >
           合作私信
         </button>
+        </div>
         <Select
           aria-label="审核状态"
           value={filter}

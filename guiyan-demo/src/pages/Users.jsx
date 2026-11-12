@@ -25,7 +25,9 @@ export function Users() {
     [push, setPush] = useState(false),
     [content, setContent] = useState(""),
     [history, setHistory] = useState([]),
-    [preview, setPreview] = useState([]);
+    [preview, setPreview] = useState([]),
+    [trend, setTrend] = useState([]),
+    [trendError, setTrendError] = useState("");
   const groups = data.settings.segments || [],
     allTags = [...new Set(data.profiles.flatMap((u) => u.tags))];
   const rows = data.profiles.filter(
@@ -36,6 +38,15 @@ export function Users() {
       (!channel || u.channel === channel),
   );
   const profile = data.profiles.find((u) => u.id === selected);
+  const describe = values => values?.length ? values.slice(0,3).map(v => `${v.name} ${v.count}次`).join("、") : "暂无付费样本";
+  useEffect(() => {
+    const controller = new AbortController();
+    setTrend([]); setTrendError("");
+    api("/segments/history?" + new URLSearchParams({tag,city,channel}), {signal:controller.signal})
+      .then(r => {if (!controller.signal.aborted) setTrend(r.series);})
+      .catch(e => {if (!controller.signal.aborted) setTrendError(e.message);});
+    return () => controller.abort();
+  }, [tag, city, channel, data.profiles]);
   useEffect(() => {
     let active = true;
     setHistory([]);
@@ -97,6 +108,7 @@ export function Users() {
         >
           保存今日快照
         </button>
+        <button className="button" disabled={busy} onClick={() => action("/demo/recall-samples", {})}>补充召回演示样本</button>
       </PageTitle>
       <div className="kpi-grid">
         {[
@@ -258,6 +270,10 @@ export function Users() {
           %。保存条件不包含自由搜索词；人数按当前数据实时计算。
         </p>
       </Panel>
+      <Panel title="分群人数与覆盖率变化">
+        <p className="note">按当前标签、城市和渠道筛选历史快照，不包含自由搜索词。每天自动保存，也可手动保存今日快照；没有记录的日期不补造数据。</p>
+        {trendError ? <p role="alert">{trendError}</p> : trend.length ? <div className="table-scroll segment-history"><table><thead><tr><th>快照日期</th><th>分群人数</th><th>当日全部用户</th><th>覆盖率</th></tr></thead><tbody>{trend.map(point => <tr key={point.date}><td>{point.date}</td><td>{point.count}人</td><td>{point.total}人</td><td><span className="coverage-cell"><i style={{width:point.coverage + "%"}}/>{point.coverage}%</span></td></tr>)}</tbody></table></div> : <p className="muted">暂无历史快照，保存今日快照后开始记录。</p>}
+      </Panel>
       <Panel title={`用户档案 · ${rows.length}人`}>
         <div className="table-scroll">
           <table>
@@ -367,7 +383,9 @@ export function Users() {
           </div>
           <dl className="profile-dl">
             <dt>来源渠道</dt>
-            <dd>{profile.channel}</dd>
+            <dd>{["H5", "电脑网页", "微信小程序", "web"].includes(profile.channel) ? `获客渠道未单独采集；原登记值：${profile.channel}` : profile.channel}</dd>
+            <dt>活跃城市</dt><dd>{describe(profile.portrait.activeCities)}</dd>
+            <dt>下单终端</dt><dd>{describe(profile.portrait.terminals)}</dd>
             <dt>有效消费</dt>
             <dd>
               {money(profile.spent)} / {profile.paid_count}笔有效付费订单
@@ -388,13 +406,21 @@ export function Users() {
                 ? "尚未付费"
                 : "距今" + profile.days_since_payment + "天"}
             </dd>
+            <dt>近30天消费</dt><dd>{profile.portrait.frequency30d}笔 / {money(profile.portrait.spent30d)}</dd>
+            <dt>登记兴趣</dt><dd>{profile.portrait.preference}</dd>
+            <dt>内容偏好</dt><dd>{describe(profile.portrait.types)}</dd>
+            <dt>剧种偏好</dt><dd>{describe(profile.portrait.genres)}</dd>
+            <dt>艺人 / 团队</dt><dd>{describe(profile.portrait.artists)}</dd>
+            <dt>场馆偏好</dt><dd>{describe(profile.portrait.venues)}</dd>
+            <dt>购票时段</dt><dd>{describe(profile.portrait.purchaseWindows)}（北京时间，旧订单时间可能为估算）</dd>
+            <dt>复购情况</dt><dd>{profile.portrait.repeat}</dd>
             <dt>运营建议</dt>
             <dd>{profile.suggestion}</dd>
             <dt>储值与支付</dt>
-            <dd>未接入真实储值；仅模拟支付</dd>
+            <dd>站内模拟余额 {money(profile.portrait.balance)}；{profile.portrait.payment}</dd>
             <dt>互动记录</dt>
             <dd>
-              收藏 {profile.favorite_count} 项 · 浏览 {profile.view_count} 次
+              收藏 {profile.favorite_count} 项 · 浏览 {profile.view_count} 次；分享行为尚未采集
             </dd>
           </dl>
           <button
@@ -425,7 +451,7 @@ export function Users() {
           ) : null}
           <h3>画像按日快照</h3>
           <p className="note">
-            从点击“保存今日快照”开始留存；不伪造历史。同日保存会更新该日结果。
+            每天自动留存，可手动补存今日结果；同日重复保存会更新当日记录。
           </p>
           {history.length ? (
             <div className="table-scroll">

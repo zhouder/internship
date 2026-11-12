@@ -104,11 +104,11 @@ export async function createApp({
   }
   async function orderRows(user) {
     return await all(
-      `SELECT o.*,r.name AS resource_name,r.image,r.category,r.unit,u.name AS user_name FROM orders o JOIN resources r ON r.id=o.resource_id JOIN users u ON u.id=o.user_id ${isAdmin(user) ? "" : "WHERE o.user_id=?"} ORDER BY o.id DESC`,
+      `SELECT o.*,r.name AS resource_name,r.image,r.category,COALESCE(NULLIF(o.resource_unit,''),r.unit) AS unit,u.name AS user_name FROM orders o JOIN resources r ON r.id=o.resource_id JOIN users u ON u.id=o.user_id ${isAdmin(user) ? "" : "WHERE o.user_id=?"} ORDER BY o.id DESC`,
       ...(isAdmin(user) ? [] : [user?.id || 0]),
     );
   }
-  const { profileRows, analysis, recommendations } = createInsights({
+  const { profileRows, analysis, recommendations, segmentHistory } = createInsights({
     all,
     get,
     orderRows,
@@ -510,6 +510,22 @@ export async function createApp({
           `"${String(v ?? "")
             .replace(/"/g, '""')
             .replace(/^[=+@-]/, "'$&")}"`;
+        const period = url.searchParams.get("period");
+        if (period !== null) {
+          assert(["day", "week", "month", "quarter"].includes(period), "统计周期错误");
+          const stats = await analysis(period);
+          const content = "\uFEFF" + [
+            ["统计维度", "周期起点", "显示区间", "有效支付笔数", "有效支付金额(元)", "统计口径"],
+            ...stats.series.map(s => [
+              {day:"日",week:"周",month:"月",quarter:"季度"}[period], s.date, s.label, s.count,
+              (s.amount / 100).toFixed(2), "北京时间支付日归集；剔除已退款；补齐零交易周期",
+            ]),
+          ].map(row => row.map(csv).join(",")).join("\r\n");
+          await audit(u, "导出经营统计", `${period}，${stats.series.length}个周期`);
+          res.writeHead(200, {"Content-Type":"text/csv; charset=utf-8", "Content-Disposition":'attachment; filename="guiyan-statistics.csv"'});
+          res.end(content);
+          return;
+        }
         const content =
           "\uFEFF" +
           [
@@ -531,7 +547,7 @@ export async function createApp({
               o.resource_name,
               o.user_name,
               (o.amount / 100).toFixed(2),
-              o.booking_date,
+              o.stock_mode === "global" || ["creative", "copyright"].includes(o.category) ? "" : o.booking_date,
               o.status,
               o.channel,
               new Date(new Date(o.created_at).getTime() + 8 * 3600000)
@@ -647,7 +663,7 @@ export async function createApp({
           text(b.unit, "单位", 10),
           text(b.description, "介绍", 3000),
           categoryImages[b.category],
-          int(b.capacity || 0, "人数", 0, 100000),
+          int(b.capacity ?? 0, "可容纳人数", b.category === "venue" ? 1 : 0, 100000),
           int(b.stock ?? 100, "库存", 0, 100000),
           JSON.stringify(b.tags || []),
           JSON.stringify(b.meta || {}),
@@ -674,8 +690,26 @@ export async function createApp({
           r = await get("SELECT * FROM resources WHERE id=?", Number(m[1]));
         assert(r, "资源不存在", 404);
         assert(validStatuses.includes(b.status || r.status), "资源状态错误");
+        const category = b.category ?? r.category;
+        assert(categories.some(c => c.id === category), "请选择资源分类");
+        if (category !== r.category) {
+          assert(!await get("SELECT id FROM orders WHERE resource_id=? LIMIT 1", r.id), "该资源已有交易记录，请新建资源以保留历史订单分类", 409);
+          if (r.category === "venue") {
+            const linked = (await all("SELECT meta FROM resources WHERE category='show'"))
+              .some(s => Number(JSON.parse(s.meta).venueId) === r.id);
+            assert(!linked, "该场馆已关联剧目，请先调整剧目的关联场馆", 409);
+          }
+        }
+        const capacity = b.capacity === undefined ? r.capacity : int(b.capacity, "可容纳人数", category === "venue" ? 1 : 0, 100000);
+        if (category !== r.category && category === "venue") assert(capacity > 0, "请填写场馆可容纳人数");
+        let tags = b.tags ?? JSON.parse(r.tags);
+        assert(Array.isArray(tags) && tags.length <= 20 && tags.every(t => typeof t === "string" && t.length <= 30), "资源标签格式错误");
+        if (category !== r.category) tags = tags.filter(t => !categories.some(c => c.name === t));
+        tags = [...new Set([categories.find(c => c.id === category).name, ...tags])];
+        if (b.unit !== undefined && b.unit !== r.unit)
+          await run("UPDATE orders SET resource_unit=? WHERE resource_id=? AND (resource_unit='' OR resource_unit IS NULL)", r.unit, r.id);
         await run(
-          "UPDATE resources SET name=?,price=?,stock=?,description=?,status=? WHERE id=?",
+          "UPDATE resources SET name=?,price=?,stock=?,description=?,status=?,category=?,city=?,unit=?,capacity=?,tags=?,image=?,daily_capacity=? WHERE id=?",
           b.name === undefined ? r.name : text(b.name, "名称", 80),
           b.price === undefined ? r.price : int(b.price, "价格"),
           b.stock === undefined ? r.stock : int(b.stock, "库存"),
@@ -683,22 +717,23 @@ export async function createApp({
             ? r.description
             : text(b.description, "介绍", 3000),
           b.status || r.status,
+          category,
+          b.city === undefined ? r.city : text(b.city, "城市", 30),
+          b.unit === undefined ? r.unit : text(b.unit, "单位", 10),
+          capacity,
+          JSON.stringify(tags),
+          category !== r.category ? categoryImages[category] : r.image,
+          inventoryMode({category}) === "date" ? (b.stock ?? r.daily_capacity ?? r.stock) : null,
           r.id,
         );
         await audit(u, "修改资源", r.name);
-        if (b.stock !== undefined && inventoryMode(r) === "date")
-          await run(
-            "UPDATE resources SET daily_capacity=? WHERE id=?",
-            b.stock,
-            r.id,
-          );
-        if (b.meta !== undefined) {
+        if (b.meta !== undefined || category !== r.category) {
           assert(
-            b.meta && typeof b.meta === "object" && !Array.isArray(b.meta),
+            b.meta === undefined || (b.meta && typeof b.meta === "object" && !Array.isArray(b.meta)),
             "扩展信息格式错误",
           );
-          const meta = JSON.parse(r.meta);
-          if (b.meta.venueId !== undefined) {
+          const meta = category === r.category ? JSON.parse(r.meta) : {};
+          if (category === "show" && b.meta?.venueId !== undefined) {
             const venueId = int(Number(b.meta.venueId), "关联场馆", 0);
             if (venueId)
               assert(
@@ -772,7 +807,7 @@ export async function createApp({
           );
         assert(r, "资源不存在或已下架", 404);
         const qty = int(b.quantity ?? 1, "数量", 1, 100),
-          d = date(b.date);
+          d = inventoryMode(r) === "global" ? currentDay() : date(b.date);
         assert(!bookingType(r) || qty === 1, "租赁类资源每单数量为1");
         const id = await transaction(async () => {
           const selection = slots.selection(r, b),
@@ -815,7 +850,7 @@ export async function createApp({
           await notify(
             u.id,
             "预约提交成功",
-            `“${r.name}”${d}的预约已提交，等待后台审核。`,
+            inventoryMode(r) === "global" ? `“${r.name}”的订单已提交，等待后台审核。` : `“${r.name}”${d}的预约已提交，等待后台审核。`,
             1,
             "system",
             Number(result.lastInsertRowid),
@@ -1164,6 +1199,9 @@ export async function createApp({
             id,
             u.id,
           );
+        } else if (b.peerId !== undefined) {
+          const peer = int(b.peerId, "联系人", 1);
+          await run("UPDATE messages SET is_read=1 WHERE user_id=? AND sender_id=? AND kind='private' AND status='approved'", u.id, peer);
         } else
           await run(
             "UPDATE messages SET is_read=1 WHERE user_id=? AND status='approved'",
@@ -1200,6 +1238,34 @@ export async function createApp({
           message: "今日画像快照已保存；同日再次保存将更新当日快照",
         });
         return;
+      }
+      if (p === "/api/segments/history") {
+        needAdmin();
+        const filters = {};
+        for (const key of ["tag", "city", "channel"]) {
+          const value = url.searchParams.get(key) || "";
+          assert(value.length <= 50, "分群条件过长"); filters[key] = value;
+        }
+        send({series: await segmentHistory(filters)}); return;
+      }
+      if (p === "/api/demo/recall-samples" && req.method === "POST") {
+        const u = needAdmin();
+        const resource = await get("SELECT id,price FROM resources WHERE category='heritage' AND status='published' ORDER BY id LIMIT 1");
+        assert(resource, "请先上架非遗体验资源");
+        let added = 0;
+        for (const [suffix, city] of [["nanning", "南宁"], ["guilin", "桂林"]]) {
+          const username = "demo_recall_" + suffix;
+          if (await get("SELECT id FROM users WHERE username=?", username)) continue;
+          const historical = shiftDay(currentDay(), -120) + "T06:00:00.000Z";
+          const result = await run("INSERT INTO users(username,password,name,role,city,age,gender,channel,preference,verified,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            username, hashPassword(randomBytes(24).toString("hex")), "召回演示·" + city + "用户", "user", city, 25, "未设置", "自然流量", "heritage", 0, historical);
+          const uid = Number(result.lastInsertRowid);
+          await run("INSERT INTO orders(code,user_id,resource_id,quantity,amount,booking_date,status,channel,note,escrow,created_at,paid_at,time_estimated,stock_mode,gross_amount) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "DEMO-RECALL-" + suffix, uid, resource.id, 1, resource.price, historical.slice(0,10), "completed", "H5", "召回测试样本：模拟120天前完成的消费；非真实交易", "模拟结算完成", historical, historical, 1, "date", resource.price);
+          added++;
+        }
+        if (added) {await audit(u, "补充召回演示样本", `${added}名模拟用户，不修改已有用户或订单`); await saveProfileSnapshots("manual");}
+        send({ok:true,added,message:added ? `已补充${added}名召回演示用户` : "召回演示样本已存在，未重复添加"}); return;
       }
       m = p.match(/^\/api\/profiles\/(\d+)\/history$/);
       if (m) {

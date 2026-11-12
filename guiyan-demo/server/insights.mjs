@@ -69,8 +69,15 @@ export function createInsights({
         "SELECT user_id,detail,created_at FROM events WHERE type='view'",
       ),
       rules = await setting("tagRules", []),
-      resources = await all("SELECT id,category FROM resources");
+      resources = await all("SELECT id,name,category,city,meta FROM resources"),
+      wallets = await all("SELECT user_id,balance FROM demo_wallets");
     const byId = new Map(resources.map((r) => [r.id, r]));
+    const balanceById = new Map(wallets.map(w => [w.user_id, w.balance]));
+    const distribution = values => {
+      const counts = new Map();
+      for (const value of values.filter(Boolean)) counts.set(value, (counts.get(value) || 0) + 1);
+      return [...counts].map(([name,count]) => ({name,count})).sort((a,b) => b.count-a.count || a.name.localeCompare(b.name));
+    };
     return users.map((u) => {
       const own = orders.filter((o) => o.user_id === u.id),
         paid = own.filter((o) => paidStatuses.includes(o.status));
@@ -86,6 +93,18 @@ export function createInsights({
       }
       const views = events.filter((e) => e.user_id === u.id),
         spent = sum(paid, "amount");
+      const recent = paid.filter(o => dayOf(o.paid_at || o.created_at) >= shiftDay(today, -29));
+      const paymentMethods = distribution(paid.map(o => o.payment_method === "balance" ? "模拟余额" : "普通模拟支付"));
+      const consumed = paid.map(o => byId.get(o.resource_id)).filter(Boolean);
+      const genres = [], artists = [], venues = [];
+      for (const r of consumed) {
+        const meta = JSON.parse(r.meta);
+        if (meta.genre) genres.push(String(meta.genre));
+        if (r.category === "artist") artists.push(r.name);
+        else if (meta.team) artists.push(...(Array.isArray(meta.team) ? meta.team : [String(meta.team)]));
+        if (r.category === "venue") venues.push(r.name);
+        else if (meta.venueId && byId.has(Number(meta.venueId))) venues.push(byId.get(Number(meta.venueId)).name);
+      }
       const metrics = {
         ...u,
         order_count: own.length,
@@ -135,8 +154,23 @@ export function createInsights({
             name,
             count,
           })),
-          balance: null,
-          payment: "模拟支付",
+          balance: balanceById.get(u.id) || 0,
+          payment: paymentMethods.map(m => `${m.name} ${m.count}笔`).join("、") || "暂无支付记录",
+          paymentMethods,
+          frequency30d: recent.length,
+          spent30d: sum(recent, "amount"),
+          preference: categories.find(c => c.id === u.preference)?.name || "未设置",
+          genres: distribution(genres),
+          artists: distribution(artists),
+          venues: distribution(venues),
+          types: distribution(consumed.map(r => categories.find(c => c.id === r.category)?.name)),
+          activeCities: distribution(consumed.map(r => r.city)),
+          terminals: distribution(own.map(o => o.channel)),
+          purchaseWindows: distribution(paid.map(o => {
+            const hour = Number(new Date(new Date(o.paid_at || o.created_at).getTime() + 8*3600000).toISOString().slice(11,13));
+            return hour < 6 ? "凌晨 00–06时" : hour < 12 ? "上午 06–12时" : hour < 18 ? "下午 12–18时" : "晚间 18–24时";
+          })),
+          shares: null,
           favorites: metrics.favorite_count,
           views: metrics.view_count,
           purchaseWindow: last
@@ -156,6 +190,17 @@ export function createInsights({
               : "推荐低门槛非遗体验与首购活动",
       };
     });
+  }
+  async function segmentHistory({tag = "", city = "", channel = ""} = {}) {
+    const snapshots = await all("SELECT snapshot_date,data FROM profile_snapshots WHERE snapshot_date IN (SELECT DISTINCT snapshot_date FROM profile_snapshots ORDER BY snapshot_date DESC LIMIT 30) ORDER BY snapshot_date");
+    const daily = new Map();
+    for (const row of snapshots) {
+      const profile = JSON.parse(row.data), day = row.snapshot_date;
+      if (!daily.has(day)) daily.set(day, {date:day,count:0,total:0});
+      const point = daily.get(day); point.total++;
+      if ((!tag || profile.tags.includes(tag)) && (!city || profile.city === city) && (!channel || profile.channel === channel)) point.count++;
+    }
+    return [...daily.values()].map(p => ({...p,coverage: Math.round(p.count/Math.max(p.total,1)*1000)/10}));
   }
   async function recommendations(user, resources, channel = "H5") {
     if (!user) return [];
@@ -537,5 +582,5 @@ export function createInsights({
       },
     };
   }
-  return { profileRows, analysis, recommendations };
+  return { profileRows, analysis, recommendations, segmentHistory };
 }

@@ -15,6 +15,7 @@ import { api, exportOrders, money, shortDate, downloadText } from "../api";
 import { PageTitle, Panel, Badge, ResourceCard } from "../ui";
 
 export function Trend({ series = [] }) {
+  const labelIndices = new Set(Array.from({length: Math.min(series.length, 7)}, (_, i) => Math.round(i * (series.length - 1) / Math.max(Math.min(series.length, 7) - 1, 1))));
   const max = Math.max(...series.map((s) => s.amount), 100);
   const points = series.map((s, i) => [
     45 + (i / Math.max(series.length - 1, 1)) * 545,
@@ -79,7 +80,7 @@ export function Trend({ series = [] }) {
           </>
         ) : null}
         {series
-          .filter((_, i) => i % Math.max(1, Math.ceil(series.length / 7)) === 0)
+          .filter((_, i) => labelIndices.has(i))
           .map((s) => {
             const i = series.indexOf(s);
             return (
@@ -87,7 +88,7 @@ export function Trend({ series = [] }) {
                 key={s.date}
                 x={45 + (i / Math.max(series.length - 1, 1)) * 545}
                 y="245"
-                textAnchor="middle"
+                textAnchor={i === 0 ? "start" : i === series.length - 1 ? "end" : "middle"}
               >
                 {s.label || (s.date.length === 10 ? s.date.slice(5) : s.date)}
               </text>
@@ -192,10 +193,11 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
         </Select>
         <button
           className="button primary"
-          onClick={() => exportOrders().catch((e) => setToast(e.message))}
+          disabled={loading}
+          onClick={() => exportOrders(period).catch((e) => setToast(e.message))}
         >
           <Download size={16} />
-          导出报表
+          导出当前统计
         </button>
       </PageTitle>
       <div className="kpi-grid">

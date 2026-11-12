@@ -249,7 +249,7 @@ export function Transactions({ mobile = false }) {
               <div>
                 <h3>{o.resource_name}</h3>
                 <p>
-                  {o.booking_date} · {o.quantity}
+                    {o.stock_mode === "global" || ["creative", "copyright"].includes(o.category) ? "商品订单" : o.booking_date} · {o.quantity}
                   {o.unit} · {o.channel}
                 </p>
                 <p>
