@@ -450,7 +450,9 @@ export async function createApp({
           ["day", "week", "month", "quarter"].includes(period),
           "无效统计周期",
         );
-        send(await analysis(period));
+        const range = url.searchParams.get("range") || "all";
+        assert(["recent", "all"].includes(range), "无效趋势范围");
+        send(await analysis(period, range));
         return;
       }
       if (p === "/api/alerts" && req.method === "POST") {
@@ -513,12 +515,14 @@ export async function createApp({
         const period = url.searchParams.get("period");
         if (period !== null) {
           assert(["day", "week", "month", "quarter"].includes(period), "统计周期错误");
-          const stats = await analysis(period);
+          const range = url.searchParams.get("range") || "all";
+          assert(["recent", "all"].includes(range), "无效趋势范围");
+          const stats = await analysis(period, range);
           const content = "\uFEFF" + [
-            ["统计维度", "周期起点", "显示区间", "有效支付笔数", "有效支付金额(元)", "统计口径"],
+            ["统计维度", "周期起点", "显示区间", "有效支付笔数", "有效支付金额(元)", "统计口径", "趋势范围"],
             ...stats.series.map(s => [
               {day:"日",week:"周",month:"月",quarter:"季度"}[period], s.date, s.label, s.count,
-              (s.amount / 100).toFixed(2), "北京时间支付日归集；剔除已退款；补齐零交易周期",
+              (s.amount / 100).toFixed(2), "北京时间支付日归集；剔除已退款；补齐零交易周期", `${stats.trendWindow.label} ${stats.trendWindow.start} 至 ${stats.trendWindow.end}`,
             ]),
           ].map(row => row.map(csv).join(",")).join("\r\n");
           await audit(u, "导出经营统计", `${period}，${stats.series.length}个周期`);

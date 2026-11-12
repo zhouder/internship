@@ -286,7 +286,7 @@ export function createInsights({
       return `${d.slice(0, 4)} Q${Math.floor((Number(d.slice(5, 7)) - 1) / 3) + 1}`;
     return d;
   }
-  async function analysis(period = "day") {
+  async function analysis(period = "day", range = "all") {
     const today = typeof clock === "function" ? clock() : clock;
     const orders = await orderRows({ role: "admin" }),
       paid = orders.filter((o) => paidStatuses.includes(o.status)),
@@ -294,12 +294,26 @@ export function createInsights({
       profiles = await profileRows();
     const daily = new Map(),
       channels = new Map();
-    const start = paid.length
+    let start = paid.length
       ? paid.map((o) => dayOf(o.paid_at || o.created_at)).sort()[0]
       : shiftDay(today, -29);
-    const end = [today, ...paid.map((o) => dayOf(o.paid_at || o.created_at))]
+    let end = [today, ...paid.map((o) => dayOf(o.paid_at || o.created_at))]
       .sort()
       .at(-1);
+    if (range === "recent") {
+      end = today;
+      if (period === "day") start = shiftDay(today, -29);
+      else if (period === "week") start = shiftDay(bucket(today, "week"), -7 * 7);
+      else {
+        const year = Number(today.slice(0, 4)), month = Number(today.slice(5, 7)) - 1;
+        const firstMonth = period === "quarter" ? Math.floor(month / 3) * 3 - 21 : month - 11;
+        start = new Date(Date.UTC(year, firstMonth, 1)).toISOString().slice(0, 10);
+      }
+    }
+    const trendWindow = {
+      range, start, end,
+      label: range === "all" ? "全部历史" : {day:"近30天",week:"近8周",month:"近12个月",quarter:"近8个季度"}[period],
+    };
     for (let d = start; d <= end; d = shiftDay(d, 1)) {
       const key = bucket(d, period);
       if (!daily.has(key))
@@ -317,8 +331,10 @@ export function createInsights({
     }
     for (const o of paid) {
       const cell = daily.get(bucket(dayOf(o.paid_at || o.created_at), period));
-      cell.amount += o.amount;
-      cell.count++;
+      if (cell) {
+        cell.amount += o.amount;
+        cell.count++;
+      }
       channels.set(o.channel, (channels.get(o.channel) || 0) + o.amount);
     }
     const ranking = resources
@@ -554,6 +570,7 @@ export function createInsights({
     ].join("\n");
     return {
       period,
+      trendWindow,
       today,
       kpis,
       series: [...daily.values()],

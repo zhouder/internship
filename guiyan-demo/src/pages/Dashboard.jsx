@@ -1,3 +1,4 @@
+import { Trend } from "../Trend";
 import { Select } from "../Select";
 import { useState, useEffect } from "react";
 import {
@@ -14,90 +15,7 @@ import { useApp } from "../state";
 import { api, exportOrders, money, shortDate, downloadText } from "../api";
 import { PageTitle, Panel, Badge, ResourceCard } from "../ui";
 
-export function Trend({ series = [] }) {
-  const labelIndices = new Set(Array.from({length: Math.min(series.length, 7)}, (_, i) => Math.round(i * (series.length - 1) / Math.max(Math.min(series.length, 7) - 1, 1))));
-  const max = Math.max(...series.map((s) => s.amount), 100);
-  const points = series.map((s, i) => [
-    45 + (i / Math.max(series.length - 1, 1)) * 545,
-    215 - (s.amount / max) * 175,
-  ]);
-  const line = points.map((p) => p.join(",")).join(" ");
-  return (
-    <div className="trend">
-      <div className="chart-legend">
-        <i />
-        交易金额（元）
-      </div>
-      <svg viewBox="0 0 620 260" role="img" aria-label="交易金额趋势图">
-        <defs>
-          <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop stopColor="#b7472c" stopOpacity=".22" />
-            <stop offset="1" stopColor="#b7472c" stopOpacity=".02" />
-          </linearGradient>
-        </defs>
-        {[0, 0.25, 0.5, 0.75, 1].map((t) => (
-          <g key={t}>
-            <line
-              x1="45"
-              x2="590"
-              y1={215 - t * 175}
-              y2={215 - t * 175}
-              stroke="#e9edf3"
-            />
-            <text x="37" y={219 - t * 175} textAnchor="end">
-              {Math.round((max * t) / 100).toLocaleString()}
-            </text>
-          </g>
-        ))}
-        {points.length ? (
-          <>
-            <polygon
-              points={`45,215 ${line} 590,215`}
-              fill="url(#chart-fill)"
-            />
-            <polyline
-              points={line}
-              fill="none"
-              stroke="#b7472c"
-              strokeWidth="3"
-              strokeLinejoin="round"
-            />
-            {points.map(([x, y], i) => (
-              <circle
-                key={i}
-                cx={x}
-                cy={y}
-                r="3"
-                fill="white"
-                stroke="#b7472c"
-                strokeWidth="2"
-              >
-                <title>
-                  {series[i].date}：{money(series[i].amount)}
-                </title>
-              </circle>
-            ))}
-          </>
-        ) : null}
-        {series
-          .filter((_, i) => labelIndices.has(i))
-          .map((s) => {
-            const i = series.indexOf(s);
-            return (
-              <text
-                key={s.date}
-                x={45 + (i / Math.max(series.length - 1, 1)) * 545}
-                y="245"
-                textAnchor={i === 0 ? "start" : i === series.length - 1 ? "end" : "middle"}
-              >
-                {s.label || (s.date.length === 10 ? s.date.slice(5) : s.date)}
-              </text>
-            );
-          })}
-      </svg>
-    </div>
-  );
-}
+export { Trend } from "../Trend";
 function Channels({ channels }) {
   const total = channels.reduce((a, c) => a + c.amount, 0),
     colors = ["#b7472c", "#d27753", "#e5b08a", "#efd8bb", "#6a786d"];
@@ -135,37 +53,34 @@ function Channels({ channels }) {
 export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
   const { data, action, setToast } = useApp();
   const [period, setPeriod] = useState("day"),
+    [range, setRange] = useState("recent"),
     [custom, setCustom] = useState(null),
-    [loading, setLoading] = useState(false);
+    [loading, setLoading] = useState(true),
+    [loadError, setLoadError] = useState(""),
+    [retry, setRetry] = useState(0);
   const a = custom || data.analytics;
+  const trendReady = !loading && !loadError && a.period === period && a.trendWindow?.range === range;
   useEffect(() => {
-    if (period === "day") {
-      setCustom(null);
-      setLoading(false);
-      return;
-    }
-    let active = true;
+    const controller = new AbortController();
     setLoading(true);
-    api("/analytics?period=" + period)
+    setLoadError("");
+    api("/analytics?" + new URLSearchParams({period, range}), {signal:controller.signal})
       .then((value) => {
-        if (active) setCustom(value);
+        if (!controller.signal.aborted) setCustom(value);
       })
       .catch((e) => {
-        if (active) setToast(e.message);
+        if (!controller.signal.aborted) {setLoadError(e.message); setToast(e.message);}
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, [period, data.analytics, setToast]);
+    return () => controller.abort();
+  }, [period, range, data.analytics, setToast, retry]);
   function changePeriod(value) {
     setPeriod(value);
   }
   async function sync() {
-    const r = await action("/sync", { channel: "票务平台" });
-    if (r) setCustom(null);
+    await action("/sync", { channel: "票务平台" });
   }
   return (
     <>
@@ -191,10 +106,14 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
           <option value="month">按月统计</option>
           <option value="quarter">按季度统计</option>
         </Select>
+        <Select aria-label="趋势范围" value={range} onChange={e => setRange(e.target.value)}>
+          <option value="recent">{{day:"近30天",week:"近8周",month:"近12个月",quarter:"近8个季度"}[period]}</option>
+          <option value="all">全部历史</option>
+        </Select>
         <button
           className="button primary"
-          disabled={loading}
-          onClick={() => exportOrders(period).catch((e) => setToast(e.message))}
+          disabled={!trendReady}
+          onClick={() => exportOrders(period, range).catch((e) => setToast(e.message))}
         >
           <Download size={16} />
           导出当前统计
@@ -231,21 +150,21 @@ export function Dashboard({ onNavigate, onOpen, analyticsPage = false }) {
         <Panel
           title="交易趋势"
           action={
-            loading ? (
+            !trendReady && !loadError ? (
               <span>更新中…</span>
             ) : (
               <span className="muted">模拟订单数据</span>
             )
           }
         >
-          <Trend series={a.series} />
+          {loadError ? <div className="trend-placeholder" role="alert"><p>{loadError}</p><button className="button" onClick={() => setRetry(n => n+1)}>重试</button></div> : !trendReady ? <div className="trend-placeholder" role="status">正在加载趋势…</div> : <Trend series={a.series} period={a.period} window={a.trendWindow} />}
         </Panel>
         <Panel title="交易渠道分布">
           <Channels channels={a.channels} />
         </Panel>
       </div>
       <p className="note">
-        趋势按北京时间支付日统计并补零；旧订单的支付、退款时间没有原始记录，已明确标为估算。周刻度显示周一至周日。订单总数包含取消和退款。
+        范围选择仅作用于交易趋势及其导出，累计指标与渠道分布按全部历史记录统计。趋势按北京时间支付日补齐零成交周期，旧订单支付时间已标注为估算；周区间按周一至周日。
       </p>
       {analyticsPage ? (
         <>

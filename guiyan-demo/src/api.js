@@ -86,8 +86,8 @@ export async function api(
     signal?.removeEventListener("abort", abort);
   }
 }
-export async function exportOrders(period) {
-  const response = await fetch("/api/export" + (period ? "?period=" + encodeURIComponent(period) : ""), {
+export async function exportOrders(period, range = "all") {
+  const response = await fetch("/api/export" + (period ? "?" + new URLSearchParams({period, range}) : ""), {
     headers: {
       Authorization: `Bearer ${localStorage.getItem(tokenKey()) || ""}`,
     },

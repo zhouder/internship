@@ -115,3 +115,22 @@ test("召回演示样本仅管理员可加，重复操作不重复创建或改�
   assert.deepEqual(boot.orders.filter(o => before.some(b => b.id===o.id)),before);
   assert.equal(boot.orders.length,before.length+2);
 });
+
+test("近期趋势不被历史召回样本拉长，补零周期完整且导出与显示同范围", async () => {
+  assert.equal((await request("/analytics?range=bad",admin)).status,400);
+  assert.equal((await request("/export?period=week&range=bad",admin)).status,400);
+  const all = (await request("/analytics",admin)).data;
+  assert.ok(all.series.length>30);
+  for (const [period,length] of [["day",30],["week",8],["month",12],["quarter",8]]) {
+    const stats = (await request(`/analytics?period=${period}&range=recent`,admin)).data;
+    assert.equal(stats.series.length,length);
+    assert.equal(stats.trendWindow.end,stats.today);
+    assert.ok(stats.trendWindow.start>all.trendWindow.start || period==="month" || period==="quarter");
+    assert.equal(stats.kpis.revenue,all.kpis.revenue);
+    assert.ok(stats.series.some(s => s.amount===0));
+    const exported = (await request(`/export?period=${period}&range=recent`,admin)).data;
+    const rows = exported.replace(/^\uFEFF/,"").split("\r\n").slice(1).map(line => [...line.matchAll(/"((?:[^\"]|\"\")*)"/g)].map(m => m[1].replaceAll('""','"')));
+    assert.deepEqual(rows.map(r => [r[1],r[2],Number(r[3]),r[4]]), stats.series.map(s => [s.date,s.label,s.count,(s.amount/100).toFixed(2)]));
+    assert.ok(rows.every(r => r[6].includes(stats.trendWindow.label)));
+  }
+});
